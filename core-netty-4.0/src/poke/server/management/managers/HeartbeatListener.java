@@ -59,7 +59,8 @@ public class HeartbeatListener implements MonitorListener {
 			logger.info("Received HB response from " + msg.getBeat().getNodeId());
 			data.setLastBeat(System.currentTimeMillis());
 		} else if (msg.hasElection()) { //Shaji: check if the message contains election message
-			logger.info("Received election message from "+msg.getElection().getNodeId());
+			//logger.info("Received election message from "+msg.getElection().getNodeId());
+			//ElectionManager.getInstance().processRequest(msg.getElection());
 		}
 		else
 			logger.error("Received heartbeatMgr from on wrong channel or unknown host: " + msg.getBeat().getNodeId());

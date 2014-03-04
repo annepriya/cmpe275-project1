@@ -81,13 +81,10 @@ public class NetworkManager {
 				SocketAddress socka = channel.localAddress();
 				if (socka != null) {
 					InetSocketAddress isa = (InetSocketAddress) socka;
-					logger.info("NODEJOIN: " + isa.getHostName() + ", " + isa.getPort());
-					ElectionManager electionMgr = ElectionManager.getInstance();
-					electionMgr.addOutgoingChannel(req.getNodeId(), isa.getHostName(),
-							isa.getPort(), channel, sa);
-					electionMgr.start();
+					logger.info("NODEJOIN: " + isa.getHostName() + ", " + isa.getPort());					
 					HeartbeatManager.getInstance().addOutgoingChannel(req.getNodeId(), isa.getHostName(),
 							isa.getPort(), channel, sa);
+					//ElectionManager.getInstance().start();
 					
 					
 				}

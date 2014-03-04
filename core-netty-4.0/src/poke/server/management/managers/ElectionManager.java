@@ -15,7 +15,13 @@
  */
 package poke.server.management.managers;
 
+import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.net.SocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,9 +30,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import poke.monitor.MonitorHandler;
+import poke.monitor.MonitorInitializer;
+import poke.monitor.MonitorListener;
+import poke.monitor.HeartMonitor.MonitorClosedListener;
 import poke.server.conf.ServerConf;
+import poke.server.management.ManagementHandler;
+import poke.server.management.ManagementInitializer;
 import poke.server.management.managers.HeartbeatManager.CloseHeartListener;
 
+import eye.Comm.Heartbeat;
 import eye.Comm.LeaderElection;
 import eye.Comm.LeaderElection.VoteAction;
 import eye.Comm.Management;
@@ -42,14 +55,19 @@ public class ElectionManager extends Thread {
 	protected static AtomicReference<ElectionManager> instance = new AtomicReference<ElectionManager>();
 
 	private String nodeId;
+	
+	private String leader = null;
+	private boolean participant = false;
+	
+	private String destHost;
+	private int destPort;
+	private String destNodeId;
+	private Channel channel;
 
 	/** @brief the number of votes this server can cast */
 	private int votes = 1;
 	
-	//Shaji: added electionData object & modified constructors
-	//private LeaderElectionData electionData;
-	
-	ConcurrentHashMap<Channel, ElectionData> outgoingLE = new ConcurrentHashMap<Channel, ElectionData>();
+	ConcurrentHashMap<Channel, LeaderElectionData> outgoingLE = new ConcurrentHashMap<Channel, LeaderElectionData>();
 
 	public static ElectionManager getInstance(String id, int votes) {
 		instance.compareAndSet(null, new ElectionManager(id, votes));
@@ -72,13 +90,69 @@ public class ElectionManager extends Thread {
 		if (votes >= 0)
 			this.votes = votes;
 		
-		//this.electionData = electionData;
+		
 	}
 	
-	//Shaji: this is called from NetworkManager.processRequest
+	public void addConnectToThisNode(String nodeId, String host, int mgmtport) {
+		
+		destHost = host;
+		destPort = mgmtport;
+		destNodeId = nodeId;
+	}
+	
+	public Channel connect() {
+		// Start the connection attempt.
+		ChannelFuture channelFuture = null;
+		//ManagementHandler handler = null;
+		EventLoopGroup group = new NioEventLoopGroup();
+		
+			try {
+				//handler = new ManagementHandler();
+				ManagementInitializer mi = new ManagementInitializer(false);
+
+				Bootstrap b = new Bootstrap();
+				// @TODO newFixedThreadPool(2);
+				b.group(group).channel(NioSocketChannel.class).handler(mi);
+				b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000);
+				b.option(ChannelOption.TCP_NODELAY, true);
+				b.option(ChannelOption.SO_KEEPALIVE, true);
+				
+				logger.info("destination host & port "+destHost + "& " +destPort);
+
+				// Make the connection attempt.
+				channelFuture = b.connect(destHost, destPort);
+				logger.info("ok till b.connect");
+				channelFuture.awaitUninterruptibly(5000l);
+				logger.info("ok till awaitUnint...");
+			/*	channel.channel().closeFuture().addListener(new ManagementClosedListener(this));
+
+				if (N == Integer.MAX_VALUE)
+					N = 1;
+				else
+					N++;
+
+				// add listeners waiting to be added
+				if (listeners.size() > 0) {
+					for (MonitorListener ml : listeners)
+						handler.addListener(ml);
+					listeners.clear();
+				} */
+			} catch (Exception ex) {
+				logger.debug("failed to initialize the election connection");
+				
+			}
+		
+
+		if (channelFuture != null && channelFuture.isDone() && channelFuture.isSuccess())
+			return channelFuture.channel();
+		else
+			throw new RuntimeException("Not able to establish connection to server");
+	}
+	
+	//Shaji: not used anymore
 	public void addOutgoingChannel(String nodeId, String host, int mgmtport, Channel ch, SocketAddress sa) {
 		if (!outgoingLE.containsKey(ch)) {
-			ElectionData electionData = new ElectionData(nodeId, host, null, mgmtport);
+			LeaderElectionData electionData = new LeaderElectionData(nodeId, host, null, mgmtport);
 			electionData.setConnection(ch, sa);
 			outgoingLE.put(ch, electionData);
 
@@ -90,38 +164,62 @@ public class ElectionManager extends Thread {
 		}
 	}
 	
-	//Shaji: ElectionManager now extends Thread. Overiding run() method of thread
-	@Override
-	public void run() {
-		logger.info("starting Election manager");
-		
+	private Management generateLE(VoteAction vote, String nodeId) {
 		LeaderElection.Builder electionBuilder = LeaderElection.newBuilder();
 		electionBuilder.setNodeId(nodeId);
 		electionBuilder.setBallotId("0");
-		electionBuilder.setDesc("Starting the election");
-		electionBuilder.setVote(LeaderElection.VoteAction.ELECTION);
+		electionBuilder.setDesc("election message");
+		electionBuilder.setVote(vote);
 		LeaderElection electionMsg = electionBuilder.build();
 		
 		Management.Builder mBuilder = Management.newBuilder();
 		mBuilder.setElection(electionMsg);
 		Management msg = mBuilder.build();
+
+		return msg;
+	}
+	
+	private void send(Management msg) {
 		
-		logger.info("outgoingLE size is "+outgoingLE.size());
-		
-		for(ElectionData leData: outgoingLE.values()) {
+    //   for(LeaderElectionData leData: outgoingLE.values()) {
 			
 			try {
-				leData.channel.writeAndFlush(msg);
+				channel.writeAndFlush(msg);
 				
-				logger.info("Election message ("+nodeId+ ") sent to "+leData.getNodeId()+ " at "+leData.getHost());
+				logger.info("Election message ("+nodeId+ ") sent to "+destNodeId+ " at "+destHost);
 			}
 			catch (Exception e) {
 				logger.error("Failed to send leader election message");
 			}
-		}
+	//	}
+		
+	}
+	
+	//Shaji: ElectionManager now extends Thread. Overiding run() method of thread
+	@Override
+	public void run() {
+		
+		logger.info("starting Election manager");	
+		
+		channel = connect();	
+		
+	    Management msg = null;
+		
+	//	while(true) {
+	    
+	  // logger.info("outgoingLE size is "+outgoingLE.size());
+			
+	   if(leader == null && !participant) {		
+		msg = generateLE(LeaderElection.VoteAction.NOMINATE,nodeId);
+	   }
+		
+		
+		
+		send(msg);		
 		
 		
 	}
+//	}
 	
 	
 
@@ -132,7 +230,7 @@ public class ElectionManager extends Thread {
 		if (req == null)
 			return;
 		
-		logger.info("Received an election request..");
+	//	logger.info("Received an election request..");
 
 		if (req.hasExpires()) {
 			long ct = System.currentTimeMillis();
@@ -145,20 +243,39 @@ public class ElectionManager extends Thread {
 		if (req.getVote().getNumber() == VoteAction.ELECTION_VALUE) {
 			// an election is declared!
 			logger.info("Election declared!");
+			
 		} else if (req.getVote().getNumber() == VoteAction.DECLAREVOID_VALUE) {
-			// no one was elected, I am dropping into standby mode`
+			// no one was elected, I am dropping into standby mode			
 		} else if (req.getVote().getNumber() == VoteAction.DECLAREWINNER_VALUE) {
 			// some node declared themself the leader
+			logger.info("Winner declared!");
+			leader = req.getNodeId();
 		} else if (req.getVote().getNumber() == VoteAction.ABSTAIN_VALUE) {
 			// for some reason, I decline to vote
 		} else if (req.getVote().getNumber() == VoteAction.NOMINATE_VALUE) {
+			Management msg  = null;
+			//LCR
 			int comparedToMe = req.getNodeId().compareTo(nodeId);
-			if (comparedToMe == -1) {
-				// Someone else has a higher priority, forward nomination
-				// TODO forward
+			if (comparedToMe == -1) {			
+				
+				logger.info("My nodeId is higher..so nominating myself if I am not a participant yet!");
+				if(!participant) {
+					msg = generateLE(LeaderElection.VoteAction.NOMINATE, nodeId);
+					send(msg);
+				}
+					
 			} else if (comparedToMe == 1) {
-				// I have a higher priority, nominate myself
-				// TODO nominate myself
+				
+				logger.info("Forwarding the nomination!");
+				msg = generateLE(LeaderElection.VoteAction.NOMINATE, req.getNodeId());
+				send(msg);
+				
+			}else if (comparedToMe == 0) {
+				logger.info("I am the leader..");
+				msg = generateLE(LeaderElection.VoteAction.DECLAREWINNER, nodeId);
+				send(msg);
+				leader = nodeId;
+
 			}
 		}
 	}

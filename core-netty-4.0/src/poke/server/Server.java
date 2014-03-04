@@ -43,7 +43,7 @@ import poke.server.management.managers.HeartbeatConnector;
 import poke.server.management.managers.HeartbeatData;
 import poke.server.management.managers.HeartbeatManager;
 import poke.server.management.managers.JobManager;
-import poke.server.management.managers.ElectionData;
+import poke.server.management.managers.LeaderElectionData;
 import poke.server.management.managers.NetworkManager;
 import poke.server.resources.ResourceFactory;
 
@@ -165,7 +165,7 @@ public class Server {
 				ChannelFuture f = b.bind(port).syncUninterruptibly();
 
 				// should use a future channel listener to do this step
-				//Shaji: addded the channel to group
+				
 				// allChannels.add(f.channel());
 
 				// block until the server socket is closed.
@@ -283,6 +283,8 @@ public class Server {
 		for (NodeDesc nn : conf.getNearest().getNearestNodes().values()) {
 			HeartbeatData node = new HeartbeatData(nn.getNodeId(), nn.getHost(), nn.getPort(), nn.getMgmtPort());
 			HeartbeatConnector.getInstance().addConnectToThisNode(node);
+			//TODO correct this code. Only last entry set
+			ElectionManager.getInstance().addConnectToThisNode(nn.getNodeId(), nn.getHost(), nn.getMgmtPort());
 			
 			//Shaji: LeaderElectiondata object instantiated. As of now, assuming that there is only one nearest node.
 			//This code has to be improved later
@@ -290,7 +292,8 @@ public class Server {
 			//electionData.setChannel(allChannels.iterator().next());
 		}
 		//electionMgr = ElectionManager.getInstance(myId, votes);
-		heartbeatMgr.start();
+		heartbeatMgr.start();	
+	
 		
 		//Shaji: start election manager thread
 	//	electionMgr.start();
@@ -325,6 +328,9 @@ public class Server {
 
 		StartCommunication comm = new StartCommunication(conf);
 		logger.info("Server " + myId + " ready");
+		
+		//Shaji: starting election manager after server is ready		
+		electionMgr.start();
 		
 		Thread cthread = new Thread(comm);
 		cthread.start();
