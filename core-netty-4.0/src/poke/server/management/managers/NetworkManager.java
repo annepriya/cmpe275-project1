@@ -68,7 +68,8 @@ public class NetworkManager {
 		if (req == null || channel == null || sa == null)
 			return;
 
-		logger.info("Network: node '" + req.getNodeId() + "' sent a " + req.getAction());
+		logger.info("Network: node '" + req.getNodeId() + "' sent a "
+				+ req.getAction());
 
 		/**
 		 * Outgoing: when a node joins to another node, the connection is
@@ -81,12 +82,13 @@ public class NetworkManager {
 				SocketAddress socka = channel.localAddress();
 				if (socka != null) {
 					InetSocketAddress isa = (InetSocketAddress) socka;
-					logger.info("NODEJOIN: " + isa.getHostName() + ", " + isa.getPort());					
-					HeartbeatManager.getInstance().addOutgoingChannel(req.getNodeId(), isa.getHostName(),
-							isa.getPort(), channel, sa);
-					//ElectionManager.getInstance().start();
-					
-					
+					logger.info("NODEJOIN: " + isa.getHostName() + ", "
+							+ isa.getPort());
+					HeartbeatManager.getInstance().addOutgoingChannel(
+							req.getNodeId(), isa.getHostName(), isa.getPort(),
+							channel, sa);
+					// ElectionManager.getInstance().start();
+
 				}
 			} else
 				logger.warn(req.getNodeId() + " not writable");

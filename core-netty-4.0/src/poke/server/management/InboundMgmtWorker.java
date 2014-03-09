@@ -89,8 +89,11 @@ public class InboundMgmtWorker extends Thread {
 					 * handled by the HeartbeatConnector.
 					 */
 					HeartbeatManager.getInstance().processRequest(req.getBeat());
-				} else if (req.hasElection()) {
+				} //why was it else if?
+				else if (req.hasElection()) {
+					logger.info("received election message in InboundMgmtworker");
 					ElectionManager.getInstance().processRequest(req.getElection());
+					
 				} else if (req.hasGraph()) {
 					NetworkManager.getInstance().processRequest(req.getGraph(), msg.channel, msg.sa);
 				} else if (req.hasJobBid()) {

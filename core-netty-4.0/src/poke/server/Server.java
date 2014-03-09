@@ -16,6 +16,7 @@
 package poke.server;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -69,7 +70,8 @@ public class Server {
 	protected JobManager jobMgr;
 	protected NetworkManager networkMgr;
 	protected HeartbeatManager heartbeatMgr;
-	protected ElectionManager electionMgr;
+	protected static ElectionManager electionMgr;
+	protected static ChannelFuture mgmtChannelF;
 
 	/**
 	 * static because we need to get a handle to the factory from the shutdown
@@ -77,7 +79,7 @@ public class Server {
 	 */
 	public static void shutdown() {
 		try {
-			if (allChannels != null) {
+			if (allChannels != null) { 
 				ChannelGroupFuture grp = allChannels.close();
 				grp.awaitUninterruptibly(5, TimeUnit.SECONDS);
 			}
@@ -228,6 +230,11 @@ public class Server {
 				logger.info("Starting mgmt " + conf.getServer().getProperty("node.id") + ", listening on port = "
 						+ mport);
 				ChannelFuture f = b.bind(mport).syncUninterruptibly();
+				logger.info("remote address " + f.channel().remoteAddress());
+				
+				electionMgr.setChannel(f);
+				electionMgr.start();
+				
 			
 
 				// block until the server socket is closed.
@@ -329,11 +336,18 @@ public class Server {
 		StartCommunication comm = new StartCommunication(conf);
 		logger.info("Server " + myId + " ready");
 		
+		String str = conf.getServer().getProperty("port.mgmt");
+		int mport = Integer.parseInt(str);
+		
+		
 		//Shaji: starting election manager after server is ready		
-		electionMgr.start();
+		
 		
 		Thread cthread = new Thread(comm);
 		cthread.start();
+		
+		
+		
 	}
 
 	/**
