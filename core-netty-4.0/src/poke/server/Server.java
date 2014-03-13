@@ -233,7 +233,7 @@ public class Server {
 				logger.info("remote address " + f.channel().remoteAddress());
 				
 				electionMgr.setChannel(f);
-				electionMgr.start();
+				electionMgr.initiateElection();
 				
 			
 
@@ -274,13 +274,6 @@ public class Server {
 		if (str != null)
 			votes = Integer.parseInt(str);
 		electionMgr = ElectionManager.getInstance(myId, votes);
-		
-		//Shaji: LeaderElectiondata object holds destination host, port, MgmtPort, NodeId, Channel etc 
-		//LeaderElectionData electionData = null;
-		
-		
-		
-	
 
 		// create manager for accepting jobs
 		jobMgr = JobManager.getInstance(myId);
@@ -290,20 +283,13 @@ public class Server {
 		for (NodeDesc nn : conf.getNearest().getNearestNodes().values()) {
 			HeartbeatData node = new HeartbeatData(nn.getNodeId(), nn.getHost(), nn.getPort(), nn.getMgmtPort());
 			HeartbeatConnector.getInstance().addConnectToThisNode(node);
-			//TODO correct this code. Only last entry set
-			ElectionManager.getInstance().addConnectToThisNode(nn.getNodeId(), nn.getHost(), nn.getMgmtPort());
 			
-			//Shaji: LeaderElectiondata object instantiated. As of now, assuming that there is only one nearest node.
-			//This code has to be improved later
-			//electionData = new LeaderElectionData(nn.getNodeId(), nn.getHost(), nn.getPort(), nn.getMgmtPort());			
-			//electionData.setChannel(allChannels.iterator().next());
+			//Shaji: TODO correct this code. Only last entry set			
+			ElectionManager.getInstance().addConnectToThisNode(nn.getNodeId(), nn.getHost(), nn.getMgmtPort());			
+
 		}
-		//electionMgr = ElectionManager.getInstance(myId, votes);
-		heartbeatMgr.start();	
-	
 		
-		//Shaji: start election manager thread
-	//	electionMgr.start();
+		heartbeatMgr.start();	
 
 		// manage heartbeatMgr connections
 		HeartbeatConnector conn = HeartbeatConnector.getInstance();
@@ -337,10 +323,7 @@ public class Server {
 		logger.info("Server " + myId + " ready");
 		
 		String str = conf.getServer().getProperty("port.mgmt");
-		int mport = Integer.parseInt(str);
-		
-		
-		//Shaji: starting election manager after server is ready		
+		int mport = Integer.parseInt(str);	
 		
 		
 		Thread cthread = new Thread(comm);
