@@ -24,10 +24,15 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import poke.monitor.HeartMonitor;
+import poke.server.management.managers.LeaderElectionData;
 import poke.server.management.ManagementInitializer;
 import eye.Comm.LeaderElection;
 import eye.Comm.LeaderElection.VoteAction;
@@ -42,6 +47,7 @@ import eye.Comm.Management;
 public class ElectionManager /* extends Thread */{
 	protected static Logger logger = LoggerFactory.getLogger("management");
 	protected static AtomicReference<ElectionManager> instance = new AtomicReference<ElectionManager>();
+	private ConcurrentLinkedQueue<LeaderElectionData> neighbours = new ConcurrentLinkedQueue<LeaderElectionData>();
 
 	private String nodeId;
 
@@ -51,7 +57,7 @@ public class ElectionManager /* extends Thread */{
 	private String destHost;
 	private int destPort;
 	private String destNodeId;
-	private Channel channel;
+//	private Channel channel;
 
 	/** @brief the number of votes this server can cast */
 	private int votes = 1;
@@ -83,19 +89,32 @@ public class ElectionManager /* extends Thread */{
 
 	public void addConnectToThisNode(String nodeId, String host, int mgmtport) {
 
-		destHost = host;
-		destPort = mgmtport;
-		destNodeId = nodeId;
-
+		LeaderElectionData ld = new LeaderElectionData(nodeId, host, mgmtport);
+		neighbours.add(ld);
 		logger.info("Election manager addConnectToThisNode --> Host is: "
 				+ destHost + " and destPort is: " + destPort);
 	}
 
-	public void setChannel(ChannelFuture f) {
-		channel = f.channel();
+//	public void setChannel(ChannelFuture f) {
+//		channel = f.channel();
+//	}
+
+	private Management generateLE(VoteAction vote, String nodeId) {
+		LeaderElection.Builder electionBuilder = LeaderElection.newBuilder();
+		electionBuilder.setNodeId(nodeId);
+		electionBuilder.setBallotId("0");
+		electionBuilder.setDesc("election message");
+		electionBuilder.setVote(vote);
+		LeaderElection electionMsg = electionBuilder.build();
+
+		Management.Builder mBuilder = Management.newBuilder();
+		mBuilder.setElection(electionMsg);
+		Management msg = mBuilder.build();
+
+		return msg;
 	}
 
-	public Channel connect() {
+	public Channel connect(String host, int port) {
 		// Start the connection attempt.
 		ChannelFuture channelFuture = null;
 		EventLoopGroup group = new NioEventLoopGroup();
@@ -109,10 +128,10 @@ public class ElectionManager /* extends Thread */{
 			b.option(ChannelOption.TCP_NODELAY, true);
 			b.option(ChannelOption.SO_KEEPALIVE, true);
 
-			logger.info("destination host & port " + destHost + "& " + destPort);
+			logger.info("destination host & port " + host + "& " + port);
 
-			InetSocketAddress destination = new InetSocketAddress(destHost,
-					destPort);
+			InetSocketAddress destination = new InetSocketAddress(host,
+					port);
 
 			channelFuture = b.connect(destination);
 			channelFuture.awaitUninterruptibly(5000l);
@@ -131,32 +150,17 @@ public class ElectionManager /* extends Thread */{
 			throw new RuntimeException(
 					"Not able to establish connection to server");
 	}
-
-	private Management generateLE(VoteAction vote, String nodeId) {
-		LeaderElection.Builder electionBuilder = LeaderElection.newBuilder();
-		electionBuilder.setNodeId(nodeId);
-		electionBuilder.setBallotId("0");
-		electionBuilder.setDesc("election message");
-		electionBuilder.setVote(vote);
-		LeaderElection electionMsg = electionBuilder.build();
-
-		Management.Builder mBuilder = Management.newBuilder();
-		mBuilder.setElection(electionMsg);
-		Management msg = mBuilder.build();
-
-		return msg;
-	}
-
+	
 	private void send(Management msg) {
+		Channel channel; 
 		try {
-			channel = connect();
-
-			channel.writeAndFlush(msg);
-
+			for (LeaderElectionData ld : neighbours){
+				channel = connect(ld.getHost(),ld.getPort());
+				channel.writeAndFlush(msg);
+				logger.info("Election message (" + nodeId + ") sent to "
+						+ destNodeId + " at " + destHost);
+			}
 			participant = true;
-
-			logger.info("Election message (" + nodeId + ") sent to "
-					+ destNodeId + " at " + destHost);
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error("Failed to send leader election message");
@@ -170,9 +174,10 @@ public class ElectionManager /* extends Thread */{
 
 		if (leader == null && !participant) {
 			msg = generateLE(LeaderElection.VoteAction.NOMINATE, nodeId);
+			send(msg);
 		}
 
-		send(msg);
+		
 	}
 
 	// }

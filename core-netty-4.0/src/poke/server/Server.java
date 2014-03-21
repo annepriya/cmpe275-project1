@@ -44,7 +44,7 @@ import poke.server.management.managers.HeartbeatConnector;
 import poke.server.management.managers.HeartbeatData;
 import poke.server.management.managers.HeartbeatManager;
 import poke.server.management.managers.JobManager;
-import poke.server.management.managers.LeaderElectionData;
+//import poke.server.management.managers.LeaderElectionData;
 import poke.server.management.managers.NetworkManager;
 import poke.server.resources.ResourceFactory;
 
@@ -232,7 +232,6 @@ public class Server {
 				ChannelFuture f = b.bind(mport).syncUninterruptibly();
 				logger.info("remote address " + f.channel().remoteAddress());
 				
-				electionMgr.setChannel(f);
 				electionMgr.initiateElection();
 				
 			
