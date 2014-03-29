@@ -29,6 +29,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import poke.monitor.MonitorInitializer;
+
 import com.google.protobuf.GeneratedMessage;
 
 import eye.Comm.Request;
@@ -110,14 +112,16 @@ public class CommConnection {
 		group = new NioEventLoopGroup();
 		try {
 			handler = new CommHandler();
+			CommInitializer initializer = new CommInitializer(handler, false);
 			Bootstrap b = new Bootstrap();
-			b.group(group).channel(NioSocketChannel.class).handler(handler);
+			b.group(group).channel(NioSocketChannel.class).handler(initializer);
 			b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000);
 			b.option(ChannelOption.TCP_NODELAY, true);
 			b.option(ChannelOption.SO_KEEPALIVE, true);
 
 			// Make the connection attempt.
 			channel = b.connect(host, port).syncUninterruptibly();
+			channel.awaitUninterruptibly(5000l);
 
 			// want to monitor the connection to the server s.t. if we loose the
 			// connection, we can try to re-establish it.
@@ -187,7 +191,7 @@ public class CommConnection {
 					if (ch.isWritable()) {
 						CommHandler handler = conn.connect().pipeline().get(CommHandler.class);
 
-						if (!handler.send(msg))
+						if (!handler.send(msg, channel))
 							conn.outbound.putFirst(msg);
 
 					} else
