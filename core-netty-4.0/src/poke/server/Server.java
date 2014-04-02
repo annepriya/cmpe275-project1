@@ -211,6 +211,8 @@ public class Server {
 			try {
 				String str = conf.getServer().getProperty("port.mgmt");
 				int mport = Integer.parseInt(str);
+				String portString=conf.getServer().getProperty("port");
+				int port=Integer.parseInt(portString);
 
 				ServerBootstrap b = new ServerBootstrap();
 				bootstrap.put(mport, b);
@@ -231,7 +233,7 @@ public class Server {
 						+ mport);
 				ChannelFuture f = b.bind(mport).syncUninterruptibly();
 				logger.info("remote address " + f.channel().remoteAddress());
-				
+				electionMgr.setMyPublicPort(port);
 				electionMgr.initiateElection();
 				
 			
@@ -283,8 +285,9 @@ public class Server {
 			HeartbeatData node = new HeartbeatData(nn.getNodeId(), nn.getHost(), nn.getPort(), nn.getMgmtPort());
 			HeartbeatConnector.getInstance().addConnectToThisNode(node);
 			
-			//Shaji: TODO correct this code. Only last entry set			
-			ElectionManager.getInstance().addConnectToThisNode(nn.getNodeId(), nn.getHost(), nn.getMgmtPort());			
+			//Shaji: TODO correct this code. Only last entry set
+			//Anne added status to addConnectToThisNode method initially set to active
+			ElectionManager.getInstance().addConnectToThisNode(nn.getNodeId(), nn.getHost(), nn.getMgmtPort(),1);			
 
 		}
 		
