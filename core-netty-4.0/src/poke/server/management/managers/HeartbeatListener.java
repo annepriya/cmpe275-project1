@@ -15,6 +15,8 @@
  */
 package poke.server.management.managers;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +59,16 @@ public class HeartbeatListener implements MonitorListener {
 			logger.info("Received graph responses");
 		} else if (msg.hasBeat() && msg.getBeat().getNodeId().equals(data.getNodeId())) {
 			logger.info("Received HB response from " + msg.getBeat().getNodeId());
+			ElectionManager election=ElectionManager.getInstance();
+			ConcurrentLinkedQueue<LeaderElectionData> neighbours=election.getNeighbours();
+			
+			for (LeaderElectionData ld : neighbours){
+				if(ld.getNodeId().equals(data.getNodeId())){
+					ld.setActive(1);
+				
+					
+				}
+			}
 			data.setLastBeat(System.currentTimeMillis());
 		} else if (msg.hasElection()) { //Shaji: check if the message contains election message
 			//logger.info("Received election message from "+msg.getElection().getNodeId());

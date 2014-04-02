@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import poke.monitor.HeartMonitor;
+import poke.broadcast.*;
 import poke.server.management.managers.LeaderElectionData;
 import poke.server.management.ManagementInitializer;
 import eye.Comm.LeaderElection;
@@ -47,20 +48,50 @@ import eye.Comm.Management;
 public class ElectionManager /* extends Thread */{
 	protected static Logger logger = LoggerFactory.getLogger("management");
 	protected static AtomicReference<ElectionManager> instance = new AtomicReference<ElectionManager>();
-	private ConcurrentLinkedQueue<LeaderElectionData> neighbours = new ConcurrentLinkedQueue<LeaderElectionData>();
+	private static  ConcurrentLinkedQueue<LeaderElectionData> neighbours = new ConcurrentLinkedQueue<LeaderElectionData>();
+
+	public ConcurrentLinkedQueue<LeaderElectionData> getNeighbours() {
+		return neighbours;
+	}
+
+	
 
 	private String nodeId;
 
-	private String leader = null;
+	private static String leader = null;
 	private boolean participant = false;
+	
+
+	private String previousLeader;
+
+	
 
 	private String destHost;
 	private int destPort;
-	private String destNodeId;
-//	private Channel channel;
+	
+    private Channel channel;
+   
+  
+    private  boolean electionMsg;
+   
+
+	private  boolean okMsgRecieved;
+    int msgType=1;
+    private String senderId;
+    private boolean iInitiate;
+   
 
 	/** @brief the number of votes this server can cast */
 	private int votes = 1;
+	private int myPublicPort;
+
+	public int getMyPublicPort() {
+		return myPublicPort;
+	}
+
+	public void setMyPublicPort(int myPublicPort) {
+		this.myPublicPort = myPublicPort;
+	}
 
 	
 
@@ -72,6 +103,39 @@ public class ElectionManager /* extends Thread */{
 	public static ElectionManager getInstance() {
 		return instance.get();
 	}
+	
+	public String getLeader(){
+		return leader;
+	}
+	
+	public void setLeader(String leaderValue){
+		leader=leaderValue;
+		
+	}
+	
+	public boolean isParticipant() {
+		return participant;
+	}
+
+	public void setParticipant(boolean participant) {
+		this.participant = participant;
+	}
+	
+	 public  boolean isElectionMsg() {
+			return electionMsg;
+		}
+
+		public  void setElectionMsg(boolean electionMsg) {
+			this.electionMsg = electionMsg;
+		}
+
+		public  boolean isOkMsgRecieved() {
+			return okMsgRecieved;
+		}
+
+		public  void setOkMsgRecieved(boolean okMsgRecieved) {
+			this.okMsgRecieved = okMsgRecieved;
+		}
 
 	/**
 	 * initialize the manager for this server
@@ -87,12 +151,21 @@ public class ElectionManager /* extends Thread */{
 
 	}
 
-	public void addConnectToThisNode(String nodeId, String host, int mgmtport) {
+	public void addConnectToThisNode(String nodeId, String host, int mgmtport,int status) {
 
 		LeaderElectionData ld = new LeaderElectionData(nodeId, host, mgmtport);
+		ld.setActive(status);
 		neighbours.add(ld);
 		logger.info("Election manager addConnectToThisNode --> Host is: "
 				+ destHost + " and destPort is: " + destPort);
+	}
+	
+	public String getPreviousLeader() {
+		return previousLeader;
+	}
+
+	public void setPreviousLeader(String previousLeader) {
+		this.previousLeader = previousLeader;
 	}
 
 //	public void setChannel(ChannelFuture f) {
@@ -150,33 +223,119 @@ public class ElectionManager /* extends Thread */{
 			throw new RuntimeException(
 					"Not able to establish connection to server");
 	}
+	//not used anymore
+	public boolean checkIamGreater(){
+		boolean possibleLeader=false;
+		int myId=Integer.parseInt(nodeId);
+		for (LeaderElectionData ld : neighbours){
+			int neighbourId=Integer.parseInt(ld.getNodeId());
+			if(myId>neighbourId){
+				possibleLeader=true;
+			}
+		}
+		return possibleLeader;
+	}
+	
+	
 	
 	private void send(Management msg) {
+        int myId=Integer.parseInt(nodeId);
 		Channel channel; 
 		try {
-			for (LeaderElectionData ld : neighbours){
+			
+			switch(msgType){
+			case 1:for (LeaderElectionData ld : neighbours){
+				int neighbourId=Integer.parseInt(ld.getNodeId());
+			
+				//if(neighbourId>myId && !(ld.getNodeId().equals(previousLeader))){
+				if(neighbourId>myId && (ld.getActive()==1)){
+				   channel = connect(ld.getHost(),ld.getPort());
+				   channel.writeAndFlush(msg);
+				   participant = true;
+				   logger.info("Election message (" + nodeId + ") sent to "
+						+ ld.getNodeId() + " at " + ld.getPort());
+			       }
+			}
+					break;
+			case 2:for (LeaderElectionData ld : neighbours){
+				if(senderId.equals(ld.getNodeId())){
 				channel = connect(ld.getHost(),ld.getPort());
 				channel.writeAndFlush(msg);
-				logger.info("Election message (" + nodeId + ") sent to "
-						+ destNodeId + " at " + destHost);
+				logger.info("Ok message (" + nodeId + ") sent to "
+						+ld.getHost() + " at " + ld.getPort() +""+ld.getNodeId());
+			
+				}
 			}
 			participant = true;
+			break;
+			
+			case 3://co-rrdinator msg send to all lower ids
+				for (LeaderElectionData ld : neighbours){
+					int neighbourId=Integer.parseInt(ld.getNodeId());
+					if(neighbourId<myId && (ld.getActive()==1)){
+
+					   channel = connect(ld.getHost(),ld.getPort());
+					   channel.writeAndFlush(msg);
+					   participant = true;
+					   logger.info("Co-ordinator message (" + nodeId + ") sent to "
+							+ ld.getHost() + " at " + ld.getPort());
+				       }
+				}
+				   break;
+				   default : logger.info("unknown message type");break;
+				}
+			
+			
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error("Failed to send leader election message");
 		}
+	
+		
+		
 	}
-
+	
+	
+	
+	
 	public void initiateElection() {
+		iInitiate=true;
 		logger.info("starting Election manager");
 
 		Management msg = null;
 
 		if (leader == null && !participant) {
-			msg = generateLE(LeaderElection.VoteAction.NOMINATE, nodeId);
+			msgType=1;
+			msg = generateLE(LeaderElection.VoteAction.ELECTION, nodeId);
 			send(msg);
+		}//in case it already recieved an election msg but still initiating
+			if(!okMsgRecieved && electionMsg){
+				//if no ok message is recieved
+				logger.info("No ok message recieved");
+				//I am the leader
+				HeartMonitor.leaderDown=false;
+				msg = generateLE(LeaderElection.VoteAction.DECLAREWINNER,
+						nodeId);
+				participant=false;
+				leader=nodeId;
+				msgType=3;		
+				send(msg);
+				BroadcastLeader broadcast=new BroadcastLeader(myPublicPort);
+				broadcast.start();
+				
+			
 		}
 
+		
+	}
+	
+	//retrieve the leader of the network
+	public String whoIsTheLeader(){
+		if(leader!=null)
+		return leader;
+		else
+			return null;
 		
 	}
 
@@ -190,11 +349,16 @@ public class ElectionManager /* extends Thread */{
 		// to be used later
 
 	}
+	
+	public void setChannel(ChannelFuture f) {
+		channel = f.channel();
+	}
 
 	/**
 	 * @param args
+	 * @throws Exception 
 	 */
-	public void processRequest(LeaderElection req) {
+	public void processRequest(LeaderElection req) throws Exception {
 		if (req == null)
 			return;
 
@@ -211,54 +375,47 @@ public class ElectionManager /* extends Thread */{
 		if (req.getVote().getNumber() == VoteAction.ELECTION_VALUE) {
 			// an election is declared!
 			logger.info("Election declared!");
+			if(!iInitiate){
+				okMsgRecieved=false;
+			}
+			
+			electionMsg=true;
+		    senderId=req.getNodeId();
+			msg = generateLE(LeaderElection.VoteAction.ABSTAIN, nodeId);
+		    msgType=2;
+	        send(msg);
+	        participant=true;
 
 		} else if (req.getVote().getNumber() == VoteAction.DECLAREVOID_VALUE) {
 			// no one was elected, I am dropping into standby mode
+			participant=false;
 		} else if (req.getVote().getNumber() == VoteAction.DECLAREWINNER_VALUE) {
 			// some node declared themself the leader
+			HeartMonitor.leaderDown=false;
+			//leaderElected=true;
 			leader = req.getNodeId();
 			logger.info("Winner declared! leader is :" + leader);
-			if (!leader.equals(nodeId)) {
-				msg = generateLE(LeaderElection.VoteAction.DECLAREWINNER,
-						leader);
-				send(msg);
-			}
+			 
 
 		} else if (req.getVote().getNumber() == VoteAction.ABSTAIN_VALUE) {
 			// for some reason, I decline to vote
-		} else if (req.getVote().getNumber() == VoteAction.NOMINATE_VALUE) {
-			logger.info("Received a nomination!");
-
-			// LCR
-
-			int comparedToMe = req.getNodeId().compareTo(nodeId);
-			if (comparedToMe < 0) {
-
-				if (!participant) {
-					logger.info("My nodeId is higher..so nominating myself if I am not a participant yet!");
-					msg = generateLE(LeaderElection.VoteAction.NOMINATE, nodeId);
-					send(msg);
-				}
-
-			} else if (comparedToMe > 0) {
-
-				logger.info("Forwarding the nomination!");
-				msg = generateLE(LeaderElection.VoteAction.NOMINATE,
-						req.getNodeId());
-				send(msg);
-
-			} else if (comparedToMe == 0) {
-				logger.info("I am the leader..");
-				msg = generateLE(LeaderElection.VoteAction.DECLAREWINNER,
-						nodeId);
-				send(msg);
-				leader = nodeId;
-
-			} else {
-				logger.info("Received nodeid is :" + req.getNodeId());
-				logger.info("my nodeid is :" + nodeId);
-				logger.info("ComparedToMe is :" + comparedToMe);
-			}
+			okMsgRecieved=true;
+			participant=false;
+		} 
+		if(!okMsgRecieved && electionMsg){
+			//if no ok message is recieved
+			logger.info("No ok message recieved");
+			//I am the leader
+			HeartMonitor.leaderDown=false;
+			msg = generateLE(LeaderElection.VoteAction.DECLAREWINNER,
+					nodeId);
+			participant=false;
+			leader=nodeId;
+			msgType=3;		
+			send(msg);
+			BroadcastLeader broadcast=new BroadcastLeader(myPublicPort);
+			broadcast.start();
+			
 		}
 	}
 }

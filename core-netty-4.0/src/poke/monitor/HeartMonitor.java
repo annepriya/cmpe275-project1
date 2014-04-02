@@ -26,10 +26,13 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import poke.server.management.managers.ElectionManager;
+import poke.server.management.managers.LeaderElectionData;
 import eye.Comm.Management;
 import eye.Comm.Network;
 import eye.Comm.Network.NetworkAction;
@@ -57,6 +60,7 @@ public class HeartMonitor {
 	private String whoami;
 	private String host;
 	private int port;
+	public static boolean leaderDown;
 
 	// this list is only used if the connection cannot be established - it holds
 	// the listeners to be added.
@@ -154,8 +158,37 @@ public class HeartMonitor {
 					listeners.clear();
 				}
 			} catch (Exception ex) {
-				logger.debug("failed to initialize the heartbeat connection");
-				// logger.error("failed to initialize the heartbeat connection",
+				logger.debug("failed to initialize the heartbeat connection with node :" +whoami);
+				
+				
+				 ElectionManager election=ElectionManager.getInstance();
+					ConcurrentLinkedQueue<LeaderElectionData> neighbours=election.getNeighbours();
+					
+					for (LeaderElectionData ld : neighbours){
+						if(ld.getNodeId().equals(whoami)){
+							ld.setActive(0);
+							
+							
+						}
+					}
+					   
+						String leader=election.getLeader();
+						if(leader.equals(whoami)&& !leaderDown){
+							logger.info("leader is down so initiate election");
+							
+							
+							
+							
+							election.setPreviousLeader(leader);
+							election.setLeader(null);
+							
+							//election.setElectionMsg(false);
+							election.setOkMsgRecieved(false);
+							leaderDown=true;
+							election.setParticipant(false);
+							election.initiateElection();
+							
+						}
 				// ex);
 			}
 		}
@@ -180,6 +213,9 @@ public class HeartMonitor {
 			return "Unknown";
 	}
 
+	public String getNodeId(){
+		return whoami;
+	}
 	/**
 	 * request the node to send heartbeats.
 	 * 
