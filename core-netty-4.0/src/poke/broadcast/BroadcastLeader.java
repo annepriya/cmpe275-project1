@@ -21,6 +21,7 @@ public class BroadcastLeader extends Thread {
 	protected static Logger logger = LoggerFactory.getLogger("broadcast leader");
 	private final int publicPort;
 	private final int broadcastPort=8080;
+	private volatile boolean forever=true;
 
 	public BroadcastLeader(int port) {
 		// TODO Auto-generated constructor stub
@@ -29,7 +30,7 @@ public class BroadcastLeader extends Thread {
 	
 	 public void run() {
 		  EventLoopGroup group = new NioEventLoopGroup();
-		          while(true){
+		          while(forever){
 		           try {
 		        	   Thread.sleep(5000);
 		              Bootstrap b = new Bootstrap();
@@ -56,6 +57,11 @@ public class BroadcastLeader extends Thread {
 		          }
 	
 }
+	 
+	 public void terminateBroadcast(){
+		 forever=false;
+		 
+	 }
 	
 	
 
