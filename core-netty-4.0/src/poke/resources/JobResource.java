@@ -15,18 +15,37 @@
  */
 package poke.resources;
 
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
+
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import poke.server.Server;
+import poke.server.conf.NodeDesc;
+import poke.server.conf.ServerConf;
+import poke.server.management.ManagementInitializer;
+import poke.server.management.ManagementQueue;
+import poke.server.management.managers.ElectionManager;
 import poke.server.resources.Resource;
 import poke.server.resources.ResourceUtil;
+import poke.server.storage.MongoStorage;
 import eye.Comm.JobDesc;
 import eye.Comm.JobDesc.JobCode;
 import eye.Comm.JobOperation;
+import eye.Comm.JobProposal;
+import eye.Comm.Management;
 import eye.Comm.NameValueSet;
 import eye.Comm.Payload;
 import eye.Comm.Ping;
@@ -39,22 +58,110 @@ public class JobResource implements Resource {
 	protected static Logger logger = LoggerFactory.getLogger("server");
 
 	private static final String signUp = "sign_up";
-	private static final String logIn = "log_in";
+	private static final String logIn = "sign_in";
 	private static final String listCourses = "list_courses";
+	private static Map<String,Request> requestMap;
+	private static ServerConf configFile;
 
 	public JobResource() {
 		super();
+		this.requestMap = new HashMap<String,Request>();
 
+	}
+		
+	
+	public static Map<String, Request> getRequestMap() {
+		return requestMap;
+	}
+
+
+
+
+	@Override
+	public void setCfg(ServerConf file) {
+		configFile = file;
+	}
+	
+	public Channel connect(InetSocketAddress sa) {
+		// Start the connection attempt.
+		ChannelFuture channelFuture = null;
+		EventLoopGroup group = new NioEventLoopGroup();
+
+		try {
+			ManagementInitializer mi = new ManagementInitializer(false);
+			Bootstrap b = new Bootstrap();
+
+			b.group(group).channel(NioSocketChannel.class).handler(mi);
+			b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000);
+			b.option(ChannelOption.TCP_NODELAY, true);
+			b.option(ChannelOption.SO_KEEPALIVE, true);	
+			
+
+			channelFuture = b.connect(sa);
+			channelFuture.awaitUninterruptibly(5000l);
+
+			logger.info("connect successful");
+
+		} catch (Exception ex) {
+			logger.debug("failed to initialize the election connection");
+
+		}
+
+		if (channelFuture != null && channelFuture.isDone()
+				&& channelFuture.isSuccess())
+			return channelFuture.channel();
+		else
+			throw new RuntimeException(
+					"Not able to establish connection to server");
 	}
 
 	@Override
 	public Request process(Request request) {
-
-		Request reply = null;
-
-		JobOperation jobOp = request.getBody().getJobOp();
-
-		logger.info("Job: " + jobOp.getJobId());
+		// TODO seperate the task for leader and other nodes 
+			Request reply = null;
+	
+			JobOperation jobOp = request.getBody().getJobOp();
+	
+			logger.info("Job: " + jobOp.getJobId());	
+			
+			if (Server.getMyId().equals(ElectionManager.getInstance().getLeader())){
+			//TODO the following
+			//check if the jobId exists in requestMap
+			//if yes, check the job status
+			//if success, remove the job request from requestMap
+			
+			//Job proposal
+			requestMap.put(jobOp.getJobId(),request);		
+			
+			
+			Management.Builder mb = Management.newBuilder();
+			JobProposal.Builder jbr = JobProposal.newBuilder();
+			jbr.setJobId(jobOp.getJobId());
+			jbr.setNameSpace(jobOp.getData().getNameSpace());
+			jbr.setOwnerId(jobOp.getData().getOwnerId());
+			jbr.setWeight(5);
+			
+			mb.setJobPropose(jbr.build());
+			
+			Management jobProposal = mb.build();
+			
+			
+			for (NodeDesc nn : configFile.getNearest().getNearestNodes().values()) {
+				String destHost = nn.getHost();
+				int destPort = nn.getMgmtPort();
+				
+				logger.info("destination host & port " + destHost + "& " + destPort);
+	
+				
+				InetSocketAddress sa = new InetSocketAddress(destHost, destPort);
+				
+				Channel ch = connect(sa);
+				ch.writeAndFlush(jobProposal);
+	//			ManagementQueue.enqueueResponse(jobProposal,ch);
+			}
+		}		
+		
+			else{
 
 		if (jobOp.hasAction()) {
 
@@ -78,10 +185,17 @@ public class JobResource implements Resource {
 					if (nvSet != null) {						
 						 nvList = nvSet.getNodeList();
 					}
+					String email,password,firstName,lastName;
+					email=password=firstName=lastName=null;
+					for (NameValueSet nvPair : nvList){
+						credentials.put(nvPair.getName(), nvPair.getValue());
+						if (nvPair.getName().equals("email")) email = nvPair.getValue();
+						if (nvPair.getName().equals("firstName")) firstName = nvPair.getValue();
+						if (nvPair.getName().equals("lastName")) lastName = nvPair.getValue();
+						if (nvPair.getName().equals("password")) password = nvPair.getValue();
+					}
+					MongoStorage.addUser(email, password, firstName, lastName);
 					
-					for (NameValueSet nvPair : nvList)				
-
-					credentials.put(nvPair.getName(), nvPair.getValue());
 
 					logger.info("credentials: " + credentials.toString());
 
@@ -119,7 +233,7 @@ public class JobResource implements Resource {
 							credentials
 									.put(nvPair.getName(), nvPair.getValue());
 						}
-						logger.info("credentials: " + credentials.toString());
+						logger.info("#######Credentials: " + credentials.toString()+"#######");
 
 						// TODO get login details from DB & validate them
 
@@ -196,7 +310,7 @@ public class JobResource implements Resource {
 			}
 
 		}
-
+	}
 		return reply;
 
 	}

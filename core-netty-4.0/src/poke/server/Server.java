@@ -47,6 +47,7 @@ import poke.server.management.managers.JobManager;
 //import poke.server.management.managers.LeaderElectionData;
 import poke.server.management.managers.NetworkManager;
 import poke.server.resources.ResourceFactory;
+import poke.server.storage.MongoStorage;
 
 /**
  * Note high surges of messages can close down the channel if the handler cannot
@@ -72,6 +73,8 @@ public class Server {
 	protected HeartbeatManager heartbeatMgr;
 	protected static ElectionManager electionMgr;
 	protected static ChannelFuture mgmtChannelF;
+	private static String myId;
+	
 
 	/**
 	 * static because we need to get a handle to the factory from the shutdown
@@ -264,7 +267,7 @@ public class Server {
 		// start the inbound and outbound manager worker threads
 		ManagementQueue.startup();
 
-		String myId = conf.getServer().getProperty("node.id");
+		myId = conf.getServer().getProperty("node.id");
 
 		// create manager for network changes
 		networkMgr = NetworkManager.getInstance(myId);
@@ -277,7 +280,7 @@ public class Server {
 		electionMgr = ElectionManager.getInstance(myId, votes);
 
 		// create manager for accepting jobs
-		jobMgr = JobManager.getInstance(myId);
+		jobMgr = JobManager.getInstance(myId,conf);
 
 		// establish nearest nodes and start receiving heartbeats
 		heartbeatMgr = HeartbeatManager.getInstance(myId);
@@ -297,6 +300,7 @@ public class Server {
 		HeartbeatConnector conn = HeartbeatConnector.getInstance();
 		conn.start();
 
+		new MongoStorage("localhost");
 		logger.info("Server " + myId + ", managers initialized");
 	}
 
@@ -333,6 +337,13 @@ public class Server {
 		
 		
 		
+	}
+	public static String getMyId() {
+		return myId;
+	}
+
+	public static void setMyId(String myId) {
+		Server.myId = myId;
 	}
 
 	/**

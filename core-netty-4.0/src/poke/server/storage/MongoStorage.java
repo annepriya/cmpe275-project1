@@ -30,7 +30,7 @@ public class MongoStorage {
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}/*
 		collUsers.drop();
 		collCoureses.drop();
 		collFiles.drop();
@@ -42,21 +42,22 @@ public class MongoStorage {
 		collFiles.insert(counter);
 		collQuestions.insert(counter);
 		collAnswers.insert(counter);
+		*/
 	}
-	
+/*	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		MongoStorage DB = new MongoStorage("localhost");
 		
-		addUser(counterInc(collUsers), "test@test.com", "secret", "first", "test");
-		addUser(counterInc(collUsers), "test2@test.com", "secret", "second", "test");
+		addUser("test@test.com", "secret", "first", "test");
+		addUser("test2@test.com", "secret", "second", "test");
 		printAll(collUsers);
 		updateUser("test2@test.com", "password", "boo");
 		BasicDBObject user = getUser("test2@test.com");
 //		System.out.println(user.getString("password"));
 		
-		addCourse(counterInc(collCoureses), "CMPE", "275", new ArrayList<Integer>(), "22nd Jan", "20 May");
-		addCourse(counterInc(collCoureses), "CMPE", "203", new ArrayList<Integer>(), "22nd Jan", "20 May");
+		addCourse("CMPE", "275","Distributed component design, scalability, messaging, and integration practices.", new ArrayList<Integer>(), "22nd Jan", "05/20/2014");
+		addCourse("CMPE", "203", "Development of software systems from the perspective of project management.",new ArrayList<Integer>(), "22nd Jan", "05/20/2014");
 		addMemberToCourse(1,1);
 		addMemberToCourse(1,2);
 		addMemberToCourse(2,1);
@@ -68,20 +69,20 @@ public class MongoStorage {
 		removeMemberFromCourse(1, 1);
 //		printAll(collCoureses);
 		
-		addFile(counterInc(collFiles), "test.txt", 1, "3/27/2014");
-		addFile(counterInc(collFiles), "test2.txt", 2, "3/27/2014");
-		addFile(counterInc(collFiles), "test3.txt", 2, "3/27/2014");
+		addFile("test.txt", 1, "3/27/2014");
+		addFile("test2.txt", 2, "3/27/2014");
+		addFile("test3.txt", 2, "3/27/2014");
 		printAll(collFiles);
 		List<DBObject> userFiles = getFileByuId(2);
 		for (int i=0; i< userFiles.size();i++){
 //			System.out.println((Integer)userFiles.get(i).get("fId")+". "+(String)userFiles.get(i).get("name"));
 		}
-		
-		addQuestion(counterInc(collQuestions), "add&drop", 1,  "when is the last day for add/drop", "3/27/2014");
-		addQuestion(counterInc(collQuestions), "Add Code", 2,  "How can I get an add code?", "3/27/2014");
-		addAnswer(counterInc(collAnswers), 2, 1, "April 4th");
-		addAnswer(counterInc(collAnswers), 1, 2, "Fill in the add code form.");
-		addAnswer(counterInc(collAnswers), 2, 1, "Beg the professor");
+	
+		addQuestion("add&drop", 1,  "when is the last day for add/drop", "3/27/2014");
+		addQuestion("Add Code", 2,  "How can I get an add code?", "3/27/2014");
+		addAnswer(2, 1, "April 4th");
+		addAnswer( 1, 2, "Fill in the add code form.");
+		addAnswer(2, 1, "Beg the professor");
 //		deleteAnswer(3);
 		List<DBObject> answers =getAnswersByqId(1);
 		for (int i=0; i< answers.size();i++){
@@ -94,6 +95,7 @@ public class MongoStorage {
 
 		
 	}
+*/
 	public static void printAll(DBCollection coll){
 		DBCursor cursor = coll.find();
 		try {
@@ -104,9 +106,9 @@ public class MongoStorage {
 		   cursor.close();
 		}
 	}
-	public static void addUser(int uId, String email, String password, String firstName, String lastName){
+	public static void addUser(String email, String password, String firstName, String lastName){
 		BasicDBObject user = new BasicDBObject();
-		user.append("uId", uId);
+		user.append("uId", counterInc("users"));
 		user.append("email", email);
 		user.append("password", password);
 		user.append("firstName", firstName);
@@ -127,11 +129,12 @@ public class MongoStorage {
 		BasicDBObject newDoc = new BasicDBObject().append("$set", change);
     	collUsers.update(query,newDoc);
 	}
-	public static void addCourse(int cId, String name, String code, ArrayList<Integer> members, String startDate, String endDate){
+	public static void addCourse(String name, String code, String desc,ArrayList<Integer> members, String startDate, String endDate){
 		BasicDBObject course = new BasicDBObject();
-		course.append("cId", cId);
+		course.append("cId", counterInc("courses"));
 		course.append("name", name);
 		course.append("code", code);
+		course.append("desc", desc);
 		course.append("members", members);
 		course.append("startDate", startDate);
 		course.append("endDate", endDate);
@@ -175,9 +178,9 @@ public class MongoStorage {
 		temp = (ArrayList<Integer>)getCourseBycId(cId).get("members");
 		return temp;
 	}
-	public static void addFile(int fId, String name, int owner, String uploadDate){
+	public static void addFile(String name, int owner, String uploadDate){
 		BasicDBObject file = new BasicDBObject();
-		file.append("fId", fId);
+		file.append("fId", counterInc("files"));
 		file.append("name", name);
 		file.append("owner", owner);
 		file.append("uploadDate", uploadDate);
@@ -201,9 +204,9 @@ public class MongoStorage {
 		BasicDBObject newDoc = new BasicDBObject().append("$set", change);
     	collFiles.update(query,newDoc);
 	}
-	public static void addQuestion(int qId, String title, int owner, String description, String postDate){
+	public static void addQuestion(String title, int owner, String description, String postDate){
 		BasicDBObject question = new BasicDBObject();
-		question.append("qId", qId);
+		question.append("qId", counterInc("questions"));
 		question.append("title", title);
 		question.append("owner", owner);
 		question.append("description", description);
@@ -253,9 +256,9 @@ public class MongoStorage {
 		temp = (ArrayList<Integer>)getQuestionByqId(qId).get("answers");
 		return temp;
 	}*/
-	public static void addAnswer(int aId, int uId, int qId, String description){
+	public static void addAnswer(int uId, int qId, String description){
 		BasicDBObject answer = new BasicDBObject();
-		answer.append("aId", aId);
+		answer.append("aId", counterInc("answers"));
 		answer.append("uId", uId);
 		answer.append("qId", qId);
 		answer.append("description", description);
@@ -279,7 +282,8 @@ public class MongoStorage {
 		BasicDBObject newDoc = new BasicDBObject().append("$set", change);
     	collAnswers.update(query,newDoc);
 	}
-	public static Integer counterInc(DBCollection coll){
+	public static Integer counterInc(String collName){
+		DBCollection coll = db.getCollection(collName);
 		BasicDBObject query = new BasicDBObject();
     	BasicDBObject field = new BasicDBObject();
     	field.put("counter", 1);

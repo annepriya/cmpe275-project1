@@ -92,6 +92,7 @@ public class ResourceFactory {
 		try {
 			// strategy: instance-per-request
 			Resource rsc = (Resource) Beans.instantiate(this.getClass().getClassLoader(), rc.getClazz());
+			rsc.setCfg(cfg);
 			return rsc;
 		} catch (Exception e) {
 			logger.error("unable to create resource " + rc.getClazz());

@@ -27,7 +27,7 @@ public class BroadcastLeader extends Thread {
 		// TODO Auto-generated constructor stub
 		this.publicPort=port;
 	}
-	
+
 	 public void run() {
 		  EventLoopGroup group = new NioEventLoopGroup();
 		          while(forever){
@@ -38,31 +38,31 @@ public class BroadcastLeader extends Thread {
 		              b.channel(NioDatagramChannel.class);
 					  b.option(ChannelOption.SO_BROADCAST, true);
 					  b.handler(new BroadcastHandler());
-						
+
 					    Channel channel = b.bind(0).sync().channel();
-					 
+
 						logger.info("preparing to broadcast the public port");
-						
+
 						channel.writeAndFlush(new DatagramPacket(
 			                     Unpooled.copiedBuffer("public port to send job requests :"+publicPort, CharsetUtil.UTF_8),
 			                     new InetSocketAddress("255.255.255.255", broadcastPort))).sync();
-						
+
 
 							logger.info("started broadcasting");
-						
+
 	  }catch(Exception ex){
 		  ex.printStackTrace();
 		  group.shutdownGracefully();
 	  }
 		          }
-	
+
 }
-	 
+
 	 public void terminateBroadcast(){
 		 forever=false;
-		 
+
 	 }
-	
-	
+
+
 
 }

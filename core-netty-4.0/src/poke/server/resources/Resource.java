@@ -15,6 +15,7 @@
  */
 package poke.server.resources;
 
+import poke.server.conf.ServerConf;
 import eye.Comm.Request;
 
 /**
@@ -25,7 +26,8 @@ import eye.Comm.Request;
  * @author gash
  * 
  */
-public interface Resource {
+public interface Resource {	
+
 
 	/**
 	 * called to process requests
@@ -34,5 +36,7 @@ public interface Resource {
 	 * @return an action
 	 */
 	Request process(Request request);
+	
+	void setCfg(ServerConf file);
 
 }

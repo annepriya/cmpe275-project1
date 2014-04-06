@@ -18,6 +18,7 @@ package poke.resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import poke.server.conf.ServerConf;
 import poke.server.resources.Resource;
 import poke.server.resources.ResourceUtil;
 import eye.Comm.Payload;
@@ -27,8 +28,14 @@ import eye.Comm.Request;
 
 public class PingResource implements Resource {
 	protected static Logger logger = LoggerFactory.getLogger("server");
+	private ServerConf cfg;
 
 	public PingResource() {
+	}
+	
+	@Override
+	public void setCfg(ServerConf cfg) {
+		this.cfg = cfg;
 	}
 
 	/*

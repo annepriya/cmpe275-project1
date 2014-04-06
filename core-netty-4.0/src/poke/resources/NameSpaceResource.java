@@ -18,16 +18,24 @@ package poke.resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import poke.server.conf.ServerConf;
 import poke.server.resources.Resource;
 import eye.Comm.Request;
 
 public class NameSpaceResource implements Resource {
 	protected static Logger logger = LoggerFactory.getLogger("server");
+	
+	private ServerConf cfg;
 
 	@Override
 	public Request process(Request request) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	@Override
+	public void setCfg(ServerConf cfg) {
+		this.cfg = cfg;
 	}
 
 }

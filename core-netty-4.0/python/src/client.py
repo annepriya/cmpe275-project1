@@ -38,6 +38,59 @@ def buildJob(name_space, jobAction, ownerId):
     r.body.job_op.data.options.name = "email"
     r.body.job_op.data.options.value = "shajit4"
     
+    nvs = comm_pb2.NameValueSet()
+    nvs.node_type = comm_pb2.NameValueSet.NODE
+    nvs.name = "test"
+    nvs.value = "success"
+    r.body.job_op.data.options.node.extend([nvs])
+    
+    r.header.originator = "python client"  
+    r.header.routing_id = comm_pb2.Header.JOBS
+    r.header.toNode = str(0)
+    
+    msg = r.SerializeToString()
+    return msg
+
+def buildSigninJob(name_space, jobAction, ownerId):
+    
+    jobId = str(int(round(time.time() * 1000)))
+
+    r = comm_pb2.Request()    
+
+    r.body.job_op.job_id = jobId
+    r.body.job_op.action = jobAction
+    
+    r.body.job_op.data.name_space = name_space
+    r.body.job_op.data.owner_id = ownerId
+    r.body.job_op.data.job_id = jobId
+    r.body.job_op.data.status = comm_pb2.JobDesc.JOBQUEUED
+    
+    r.body.job_op.data.options.node_type = comm_pb2.NameValueSet.NODE
+    r.body.job_op.data.options.name = "operation"
+    r.body.job_op.data.options.value = "sign_in"
+    
+    email = comm_pb2.NameValueSet()
+    email.node_type = comm_pb2.NameValueSet.NODE
+    email.name = "email"
+    email.value = "sinasad@gmail.com"
+    
+    password = comm_pb2.NameValueSet()
+    password.node_type = comm_pb2.NameValueSet.NODE
+    password.name = "password"
+    password.value = "secret"
+    
+    fName = comm_pb2.NameValueSet()
+    fName.node_type = comm_pb2.NameValueSet.NODE
+    fName.name = "firstName"
+    fName.value = "Sina"
+    
+    lName = comm_pb2.NameValueSet()
+    lName.node_type = comm_pb2.NameValueSet.NODE
+    lName.name = "lastName"
+    lName.value = "Nikkhah"
+    
+    r.body.job_op.data.options.node.extend([email,password,fName,lName])
+    
     r.header.originator = "python client"  
     r.header.routing_id = comm_pb2.Header.JOBS
     r.header.toNode = str(0)
@@ -60,7 +113,7 @@ def buildNS():
 
 def sendMsg(msg_out, port):
     s = socket.socket()         
-    host = '192.168.0.236' 
+    host = socket.gethostname()
                   
 
     s.connect((host, port))        
@@ -106,10 +159,10 @@ if __name__ == '__main__':
     UDP_PORT = 8080
     serverPort = getBroadcastMsg(UDP_PORT)   
     
-    name_space = "sign_in"
+    name_space = "sign_up"
     ownerId = 123
-    signinReq = buildJob(name_space, comm_pb2.JobOperation.ADDJOB, ownerId)    
-    sendMsg(signinReq, serverPort)   
+    signinReq = buildSigninJob(name_space, comm_pb2.JobOperation.ADDJOB, ownerId)    
+    sendMsg(signinReq, 5573)   
 
 
 

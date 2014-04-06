@@ -84,10 +84,26 @@ public class ResourceUtil {
 
 		return bldr.build();
 	}
+	
+	public static Header buildHeader(Routing path, PokeStatus status, String msg, String from, String tag, String toNode) {
+		Header.Builder bldr = Header.newBuilder();
+		bldr.setOriginator(from);
+		bldr.setRoutingId(path);
+		bldr.setTag(tag);
+		bldr.setReplyCode(status);
+		bldr.setToNode(toNode);
+
+		if (msg != null)
+			bldr.setReplyMsg(msg);
+
+		bldr.setTime(System.currentTimeMillis());
+
+		return bldr.build();
+	}
 
 	public static Request buildError(Header reqHeader, PokeStatus status, String statusMsg) {
 		Request.Builder bldr = Request.newBuilder();
-		Header hdr = buildHeaderFrom(reqHeader, status, statusMsg);
+		Header hdr = buildHeaderFrom(reqHeader, status, statusMsg);		
 		bldr.setHeader(hdr);
 
 		// TODO add logging
