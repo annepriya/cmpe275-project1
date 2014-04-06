@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import poke.resources.JobResource;
+import poke.server.ServerInitializer;
 import poke.server.conf.NodeDesc;
 import poke.server.conf.ServerConf;
 import poke.server.management.ManagementInitializer;
@@ -108,13 +109,13 @@ public class JobManager {
 		InetSocketAddress sa = new InetSocketAddress(leaderNode.getHost(),
 				leaderNode.getMgmtPort());
 
-		Channel ch = connect(sa);
+		Channel ch = connectToManagement(sa);
 		ch.writeAndFlush(jobBid);
 //		ManagementQueue.enqueueResponse(jobBid, ch);
 
 	}
 
-	public Channel connect(InetSocketAddress sa) {
+	public Channel connectToManagement(InetSocketAddress sa) {
 		// Start the connection attempt.
 		ChannelFuture channelFuture = null;
 		EventLoopGroup group = new NioEventLoopGroup();
@@ -173,6 +174,7 @@ public class JobManager {
 				Request.Builder rb = Request.newBuilder(jobOperation);					
 				Header.Builder hbldr = rb.getHeaderBuilder();
 				hbldr.setToNode(toNodeId);
+				hbldr.setRoutingId(Header.Routing.JOBS);
 				rb.setHeader(hbldr.build());
 				Request jobDispatched = rb.build();
 				NodeDesc slaveNode = configFile.getNearest().getNode(toNodeId);
@@ -180,11 +182,11 @@ public class JobManager {
 				InetSocketAddress sa = new InetSocketAddress(slaveNode.getHost(),
 						slaveNode.getPort());
 
-				Channel ch = connect(sa);
+				Channel ch = connectToPublic(sa);
 				
 				ChannelQueue queue = QueueFactory.getInstance(ch);
-				ch.writeAndFlush(jobDispatched);
-//					queue.enqueueResponse(jobDispatched, ch);
+				//ch.writeAndFlush(jobDispatched);
+				queue.enqueueResponse(jobDispatched, ch);
 
 			}
 		
@@ -197,4 +199,37 @@ public class JobManager {
 		
 		
 	}
+	
+	public Channel connectToPublic(InetSocketAddress sa) {
+		// Start the connection attempt.
+		ChannelFuture channelFuture = null;
+		EventLoopGroup group = new NioEventLoopGroup();
+
+		try {
+			ServerInitializer initializer = new ServerInitializer(false);
+			Bootstrap b = new Bootstrap();
+
+			b.group(group).channel(NioSocketChannel.class).handler(initializer);
+			b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000);
+			b.option(ChannelOption.TCP_NODELAY, true);
+			b.option(ChannelOption.SO_KEEPALIVE, true);
+
+			channelFuture = b.connect(sa);
+			channelFuture.awaitUninterruptibly(5000l);
+
+			logger.info("connect successful");
+
+		} catch (Exception ex) {
+			logger.debug("failed to initialize the election connection");
+
+		}
+
+		if (channelFuture != null && channelFuture.isDone()
+				&& channelFuture.isSuccess())
+			return channelFuture.channel();
+		else
+			throw new RuntimeException(
+					"Not able to establish connection to server");
+	}
+
 }

@@ -91,7 +91,7 @@ def buildSigninJob(name_space, jobAction, ownerId):
     
     r.body.job_op.data.options.node.extend([email,password,fName,lName])
     
-    r.header.originator = "python client"  
+    r.header.originator = "localhost:80"  
     r.header.routing_id = comm_pb2.Header.JOBS
     r.header.toNode = str(0)
     
@@ -114,6 +114,7 @@ def buildNS():
 def sendMsg(msg_out, port):
     s = socket.socket()         
     host = socket.gethostname()
+   
                   
 
     s.connect((host, port))        
@@ -156,8 +157,8 @@ def getBroadcastMsg(port):
    
 if __name__ == '__main__':
     # msg = buildPing(1, 2)
-    UDP_PORT = 8080
-    serverPort = getBroadcastMsg(UDP_PORT)   
+    #UDP_PORT = 8080
+    #serverPort = getBroadcastMsg(UDP_PORT)   
     
     name_space = "sign_up"
     ownerId = 123

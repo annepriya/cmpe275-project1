@@ -43,13 +43,26 @@ public class MongoStorage {
 		collQuestions.insert(counter);
 		collAnswers.insert(counter);
 		*/
+		
 	}
-/*	
+	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		MongoStorage DB = new MongoStorage("localhost");
 		
-		addUser("test@test.com", "secret", "first", "test");
+		collUsers.drop();
+		collCoureses.drop();
+		collFiles.drop();
+		collQuestions.drop();
+		collAnswers.drop();
+		BasicDBObject counter = new BasicDBObject("counter",0);
+		collUsers.insert(counter);
+		collCoureses.insert(counter);
+		collFiles.insert(counter);
+		collQuestions.insert(counter);
+		collAnswers.insert(counter);
+		
+		/*addUser("test@test.com", "secret", "first", "test");
 		addUser("test2@test.com", "secret", "second", "test");
 		printAll(collUsers);
 		updateUser("test2@test.com", "password", "boo");
@@ -93,9 +106,9 @@ public class MongoStorage {
 		printAll(collQuestions);
 		printAll(collAnswers);
 
-		
+		*/
 	}
-*/
+
 	public static void printAll(DBCollection coll){
 		DBCursor cursor = coll.find();
 		try {
