@@ -63,12 +63,12 @@ public class JobResource implements Resource {
 	private static final String logIn = "sign_in";
 	private static final String listCourses = "listcourses";
 	private static final String getDescription = "getdescription";
-	private static Map<String, Request> requestMap;
+	private static Map<String, Request> requestMap = new HashMap<String, Request>();
 	private static ServerConf configFile;
 
 	public JobResource() {
 		super();
-		this.requestMap = new HashMap<String, Request>();
+		
 
 	}
 
@@ -147,33 +147,34 @@ public class JobResource implements Resource {
 
 	@Override
 	public Request process(Request request) {
-		// TODO seperate the task for leader and other nodes
+		
 		Request reply = null;
-
-		JobOperation jobOp = request.getBody().getJobOp();
-
-		logger.info("Job: " + jobOp.getJobId());
 		
 		String leaderId = ElectionManager.getInstance().getLeader();
+		
+		
 
 		if (Server.getMyId().equals(leaderId)) {
-			// TODO the following
-			// check if the jobId exists in requestMap
-			// if yes, check the job status
-			// if success, remove the job request from requestMap
+			//Reply processing only done by the leader
 
 			if (request.getBody().hasJobStatus()) {
 				
 				logger.info("\n**********\nRECEIVED JOB STATUS"+"\n\n**********");
+				logger.info("RequestMap size is "+requestMap.size());
+				
+				
 				
 				//JobStatus
 				String jobId = request.getBody().getJobStatus().getJobId();
+				logger.info("JobStatus.JobId: "+ jobId+"\n");
 				if(requestMap.containsKey(jobId)){
 					//request identified
+					
 					Request clientRequest = requestMap.get(jobId);
 					String hostAddress = clientRequest.getHeader().getOriginator();
 					String ip = hostAddress.split(":")[0];
 					String port = hostAddress.split(":")[1];
+					logger.info("\n*******hostAddress of client is:"+hostAddress+"\n");
 					logger.info("\n*******ip of client is:"+ip+"\n");
 					logger.info("\n*******port of client is:"+port+"\n");
 					
@@ -189,15 +190,16 @@ public class JobResource implements Resource {
 				}
 				
 
-			} else {
+			} else if(request.getBody().hasJobOp()) {
 				logger.info("\n**********\n LEADER RECEIVED NEW JOB REQUEST"+"\n\n**********");
 				logger.info("\n**********\n CREATING A JOB PROPOSAL"+"\n\n**********");
 
 
 				// Job proposal
 				
+				JobOperation jobOp = request.getBody().getJobOp();
 				
-				logger.info("\n****JOBID: "+ jobOp.getJobId());
+				logger.info("\nJobOperation.JobId: "+ jobOp.getJobId());
 				requestMap.put(jobOp.getJobId(), request);
 
 				Management.Builder mb = Management.newBuilder();
@@ -232,8 +234,10 @@ public class JobResource implements Resource {
 		}
 
 		else {
-			
+			//Done by only a node who is not a leader
 			logger.info("\n**********\n RECEIVED NEW JOB REQUEST"+"\n\n**********");
+			
+			JobOperation jobOp = request.getBody().getJobOp();
 
 			
 			if (jobOp.hasAction()) {
