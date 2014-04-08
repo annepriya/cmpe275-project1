@@ -127,7 +127,8 @@ def sendMsg(msg_out, port):
     
     r = comm_pb2.Request()
     r.ParseFromString(msg_in)
-    print msg_in
+#    print msg_in
+    print r.body.job_status
     
 
     s.close

@@ -39,6 +39,7 @@ import poke.server.conf.ServerConf;
 import poke.server.management.ManagementInitializer;
 import poke.server.management.ManagementQueue;
 import poke.server.management.managers.ElectionManager;
+import poke.server.queue.PerChannelQueue;
 import poke.server.resources.Resource;
 import poke.server.resources.ResourceUtil;
 import poke.server.storage.MongoStorage;
@@ -64,6 +65,8 @@ public class JobResource implements Resource {
 	private static final String listCourses = "listcourses";
 	private static final String getDescription = "getdescription";
 	private static Map<String, Request> requestMap = new HashMap<String, Request>();
+	private static Map<String, Channel> chMap = new HashMap<String, Channel>();
+	
 	private static ServerConf configFile;
 
 	public JobResource() {
@@ -170,20 +173,21 @@ public class JobResource implements Resource {
 				if(requestMap.containsKey(jobId)){
 					//request identified
 					
-					Request clientRequest = requestMap.get(jobId);
-					String hostAddress = clientRequest.getHeader().getOriginator();
-					String ip = hostAddress.split(":")[0];
-					String port = hostAddress.split(":")[1];
-					logger.info("\n*******hostAddress of client is:"+hostAddress+"\n");
-					logger.info("\n*******ip of client is:"+ip+"\n");
-					logger.info("\n*******port of client is:"+port+"\n");
+//					Request clientRequest = requestMap.get(jobId);
+//					String hostAddress = clientRequest.getHeader().getOriginator();
+//					String ip = hostAddress.split(":")[0];
+//					String port = hostAddress.split(":")[1];
+//					logger.info("\n*******hostAddress of client is:"+hostAddress+"\n");
+//					logger.info("\n*******ip of client is:"+ip+"\n");
+//					logger.info("\n*******port of client is:"+port+"\n");
 					
 					requestMap.remove(jobId);	
 					
-					InetSocketAddress sa = new InetSocketAddress(ip,Integer.parseInt(port));
+//					InetSocketAddress sa = new InetSocketAddress(ip,Integer.parseInt(port));
 					
-					Channel ch = connectToPublic(sa);
-					
+//					Channel ch = connectToPublic(sa);
+					Channel ch = chMap.get(jobId);
+					chMap.remove(jobId);
 					ch.writeAndFlush(request);
 					
 					
@@ -401,5 +405,13 @@ public class JobResource implements Resource {
 		return reply;
 
 	}
+	public static Map<String, Channel> getChMap() {
+		return chMap;
+	}
+
+	public static void addToChMap(String jobId, Channel ch) {
+		JobResource.chMap.put(jobId, ch);
+	}
+
 
 }

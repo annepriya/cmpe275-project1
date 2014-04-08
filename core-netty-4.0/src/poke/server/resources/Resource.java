@@ -35,7 +35,7 @@ public interface Resource {
 	 * @param request
 	 * @return an action
 	 */
-	Request process(Request request);
+	Request process(Request requestzz);
 	
 	void setCfg(ServerConf file);
 

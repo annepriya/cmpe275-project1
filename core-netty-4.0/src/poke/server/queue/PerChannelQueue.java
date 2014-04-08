@@ -20,11 +20,14 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 
 import java.lang.Thread.State;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import poke.resources.JobResource;
 import poke.server.resources.Resource;
 import poke.server.resources.ResourceFactory;
 import poke.server.resources.ResourceUtil;
@@ -253,9 +256,12 @@ public class PerChannelQueue implements ChannelQueue {
 							logger.error("failed to obtain resource for " + req);
 							reply = ResourceUtil.buildError(req.getHeader(), PokeStatus.NORESOURCE,
 									"Request not processed");
-						} else
+						} else{
+							String jobId = req.getBody().getJobOp().getJobId();
+							if (!JobResource.getChMap().containsKey(jobId))
+							JobResource.addToChMap(jobId, conn);
 							reply = rsc.process(req);
-
+						}
 						sq.enqueueResponse(reply, null);
 					}
 
