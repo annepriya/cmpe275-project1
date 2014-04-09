@@ -110,8 +110,8 @@ public class JobManager {
 				leaderNode.getMgmtPort());
 
 		Channel ch = connectToManagement(sa);
-//		ch.writeAndFlush(jobBid);
-		ManagementQueue.enqueueResponse(jobBid, ch);
+		ch.writeAndFlush(jobBid);
+//		ManagementQueue.enqueueResponse(jobBid, ch);
 
 	}
 

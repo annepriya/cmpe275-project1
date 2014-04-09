@@ -62,15 +62,15 @@ public class MongoStorage {
 		collQuestions.insert(counter);
 		collAnswers.insert(counter);
 		
-		/*addUser("test@test.com", "secret", "first", "test");
+		addUser("test@test.com", "secret", "first", "test");
 		addUser("test2@test.com", "secret", "second", "test");
 		printAll(collUsers);
 		updateUser("test2@test.com", "password", "boo");
 		BasicDBObject user = getUser("test2@test.com");
 //		System.out.println(user.getString("password"));
 		
-		addCourse("CMPE", "275","Distributed component design, scalability, messaging, and integration practices.", new ArrayList<Integer>(), "22nd Jan", "05/20/2014");
-		addCourse("CMPE", "203", "Development of software systems from the perspective of project management.",new ArrayList<Integer>(), "22nd Jan", "05/20/2014");
+		addCourse("CMPE275", "275","Distributed component design, scalability, messaging, and integration practices.", new ArrayList<Integer>(), "22nd Jan", "05/20/2014");
+		addCourse("CMPE203", "203", "Development of software systems from the perspective of project management.",new ArrayList<Integer>(), "22nd Jan", "05/20/2014");
 		addMemberToCourse(1,1);
 		addMemberToCourse(1,2);
 		addMemberToCourse(2,1);
@@ -106,7 +106,8 @@ public class MongoStorage {
 		printAll(collQuestions);
 		printAll(collAnswers);
 
-		*/
+		if (validateUser("test@test.com", "secret")) 
+			System.out.println("User successfully validated");
 	}
 
 	public static void printAll(DBCollection coll){
@@ -142,6 +143,12 @@ public class MongoStorage {
 		BasicDBObject newDoc = new BasicDBObject().append("$set", change);
     	collUsers.update(query,newDoc);
 	}
+	public static boolean validateUser(String email,String password){
+		BasicDBObject query = new BasicDBObject("email", email);
+		BasicDBObject result = (BasicDBObject) collUsers.findOne(query);
+		if (result==null) return false;
+		return result.getString("password").equals(password);
+	}
 	public static void addCourse(String name, String code, String desc,ArrayList<Integer> members, String startDate, String endDate){
 		BasicDBObject course = new BasicDBObject();
 		course.append("cId", counterInc("courses"));
@@ -155,6 +162,10 @@ public class MongoStorage {
 	}
 	public static BasicDBObject getCourseBycId(int cId){
 		BasicDBObject query = new BasicDBObject("cId", cId);
+		return (BasicDBObject) collCoureses.findOne(query);
+	}
+	public static BasicDBObject getCourseByName(String name){
+		BasicDBObject query = new BasicDBObject("name", name);
 		return (BasicDBObject) collCoureses.findOne(query);
 	}
 	public static List<DBObject> getCoursesByuId(int uId){

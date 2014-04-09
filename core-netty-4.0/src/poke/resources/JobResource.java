@@ -32,6 +32,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mongodb.BasicDBObject;
+
 import poke.server.Server;
 import poke.server.ServerInitializer;
 import poke.server.conf.NodeDesc;
@@ -170,27 +172,11 @@ public class JobResource implements Resource {
 				//JobStatus
 				String jobId = request.getBody().getJobStatus().getJobId();
 				logger.info("JobStatus.JobId: "+ jobId+"\n");
-				if(requestMap.containsKey(jobId)){
-					//request identified
-					
-//					Request clientRequest = requestMap.get(jobId);
-//					String hostAddress = clientRequest.getHeader().getOriginator();
-//					String ip = hostAddress.split(":")[0];
-//					String port = hostAddress.split(":")[1];
-//					logger.info("\n*******hostAddress of client is:"+hostAddress+"\n");
-//					logger.info("\n*******ip of client is:"+ip+"\n");
-//					logger.info("\n*******port of client is:"+port+"\n");
-					
+				if(requestMap.containsKey(jobId)){					
 					requestMap.remove(jobId);	
-					
-//					InetSocketAddress sa = new InetSocketAddress(ip,Integer.parseInt(port));
-					
-//					Channel ch = connectToPublic(sa);
 					Channel ch = chMap.get(jobId);
 					chMap.remove(jobId);
-					ch.writeAndFlush(request);
-					
-					
+					ch.writeAndFlush(request);		
 				}
 				
 
@@ -311,37 +297,105 @@ public class JobResource implements Resource {
 						// login
 
 						if (jobOp.getData().getOptions() != null) {
-							List<NameValueSet> nvList = jobOp.getData()
-									.getOptions().getNodeList();
-
 							HashMap<String, String> credentials = new HashMap<String, String>();
+							NameValueSet nvSet = jobOp.getData().getOptions();
+							List<NameValueSet> nvList = null;
 
+							logger.info("nodeCount of nvSet is "
+									+ nvSet.getNodeCount());
+
+							if (nvSet != null) {
+								nvList = nvSet.getNodeList();
+							}
+							String email, password;
+							email = password = null;
 							for (NameValueSet nvPair : nvList) {
-								credentials.put(nvPair.getName(),
-										nvPair.getValue());
+								credentials
+										.put(nvPair.getName(), nvPair.getValue());
+								if (nvPair.getName().equals("email"))
+									email = nvPair.getValue();
+								if (nvPair.getName().equals("password"))
+									password = nvPair.getValue();
 							}
 							logger.info("#######Credentials: "
 									+ credentials.toString() + "#######");
-
-							// TODO get login details from DB & validate them
-
-							// reply
+							
+							
+							// reply success
 							Request.Builder rb = Request.newBuilder();
-
 							// metadata
-							rb.setHeader(ResourceUtil.buildHeaderFrom(
-									request.getHeader(), PokeStatus.SUCCESS,
-									"login successful"));
+													
 
 							// payload
 							Payload.Builder pb = Payload.newBuilder();
-							JobOperation.Builder jb = JobOperation.newBuilder();
-							jb.setAction(JobAction.ADDJOB);
+							JobStatus.Builder jb = JobStatus.newBuilder();
+							jb.setStatus(PokeStatus.SUCCESS);
 							jb.setJobId(jobOp.getJobId());
-
-							pb.setJobOp(jb.build());
+							jb.setJobState(JobDesc.JobCode.JOBRECEIVED);
+							
+							String message = "Login Successful";
+							if (!MongoStorage.validateUser(email, password)){
+								message = "Login Failed";
+								jb.setStatus(PokeStatus.FAILURE);
+							}
+							pb.setJobStatus(jb.build());
 							rb.setBody(pb.build());
+							rb.setHeader(ResourceUtil.buildHeader(
+									request.getHeader().getRoutingId(), PokeStatus.SUCCESS, 
+									message, request.getHeader().getOriginator(),request.getHeader().getTag(),leaderId));
+							reply = rb.build();
+						}
 
+					}
+					if (getDescription.equals(jobOp.getData().getNameSpace())) {
+						// login
+
+						if (jobOp.getData().getOptions() != null) {
+							NameValueSet nvSet = jobOp.getData().getOptions();
+							logger.info("nodeCount of nvSet is "
+									+ nvSet.getNodeCount());
+							String cName= null;
+							if (nvSet != null) {
+								if (nvSet.getName().equals("coursename"))
+								cName = nvSet.getValue();
+							}
+							BasicDBObject result = MongoStorage.getCourseByName(cName);
+							
+							// reply success
+							Request.Builder rb = Request.newBuilder();
+							// metadata
+													
+
+							// payload
+							Payload.Builder pb = Payload.newBuilder();
+							JobStatus.Builder jb = JobStatus.newBuilder();
+							jb.setStatus(PokeStatus.SUCCESS);
+							jb.setJobId(jobOp.getJobId());
+							jb.setJobState(JobDesc.JobCode.JOBRECEIVED);
+							JobDesc.Builder jd = JobDesc.newBuilder();
+							jd.setNameSpace("result");
+							jd.setOwnerId(jobOp.getData().getOwnerId());
+							jd.setJobId(jobOp.getJobId());
+							jd.setStatus(JobDesc.JobCode.JOBRECEIVED);
+							NameValueSet.Builder nv = NameValueSet.newBuilder();
+							nv.setNodeType(NameValueSet.NodeType.VALUE);
+							nv.setName("coursedescription");
+							
+							String desc = null;
+							String message = "Course Description Attached";
+							if (result==null){
+								message = "Course Not Found";
+								jb.setStatus(PokeStatus.FAILURE);
+							}
+							else desc = result.getString("desc");
+							nv.setValue(desc);
+							jd.setOptions(nv.build());
+							jb.addData(jd.build());
+							pb.setJobStatus(jb.build());
+							rb.setBody(pb.build());
+							rb.setHeader(ResourceUtil.buildHeader(
+									request.getHeader().getRoutingId(), PokeStatus.SUCCESS, 
+									message, request.getHeader().getOriginator(),request.getHeader().getTag(),leaderId));
 							reply = rb.build();
 						}
 

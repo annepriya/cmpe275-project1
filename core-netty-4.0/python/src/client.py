@@ -67,7 +67,7 @@ def buildSigninJob(name_space, jobAction, ownerId):
     
     r.body.job_op.data.options.node_type = comm_pb2.NameValueSet.NODE
     r.body.job_op.data.options.name = "operation"
-    r.body.job_op.data.options.value = "sign_in"
+    r.body.job_op.data.options.value = "sign_up"
     
     email = comm_pb2.NameValueSet()
     email.node_type = comm_pb2.NameValueSet.NODE
@@ -98,6 +98,67 @@ def buildSigninJob(name_space, jobAction, ownerId):
     msg = r.SerializeToString()
     return msg
 
+def buildSignupJob(name_space, jobAction, ownerId):
+    
+    jobId = str(int(round(time.time() * 1000)))
+
+    r = comm_pb2.Request()    
+
+    r.body.job_op.job_id = jobId
+    r.body.job_op.action = jobAction
+    
+    r.body.job_op.data.name_space = name_space
+    r.body.job_op.data.owner_id = ownerId
+    r.body.job_op.data.job_id = jobId
+    r.body.job_op.data.status = comm_pb2.JobDesc.JOBQUEUED
+    
+    r.body.job_op.data.options.node_type = comm_pb2.NameValueSet.NODE
+    r.body.job_op.data.options.name = "operation"
+    r.body.job_op.data.options.value = "sign_in"
+    
+    email = comm_pb2.NameValueSet()
+    email.node_type = comm_pb2.NameValueSet.NODE
+    email.name = "email"
+    email.value = "sinasad@gmail.com"
+    
+    password = comm_pb2.NameValueSet()
+    password.node_type = comm_pb2.NameValueSet.NODE
+    password.name = "password"
+    password.value = "secret"
+    
+    r.body.job_op.data.options.node.extend([email,password])
+    
+    r.header.originator = "localhost:80"  
+    r.header.routing_id = comm_pb2.Header.JOBS
+    r.header.toNode = str(0)
+    
+    msg = r.SerializeToString()
+    return msg
+
+def buildCourseDescJob(name_space, jobAction, ownerId):
+    
+    jobId = str(int(round(time.time() * 1000)))
+
+    r = comm_pb2.Request()    
+
+    r.body.job_op.job_id = jobId
+    r.body.job_op.action = jobAction
+    
+    r.body.job_op.data.name_space = name_space
+    r.body.job_op.data.owner_id = ownerId
+    r.body.job_op.data.job_id = jobId
+    r.body.job_op.data.status = comm_pb2.JobDesc.JOBQUEUED
+    
+    r.body.job_op.data.options.node_type = comm_pb2.NameValueSet.VALUE
+    r.body.job_op.data.options.name = "coursename"
+    r.body.job_op.data.options.value = "CMPE275"
+    
+    r.header.originator = "localhost:80"  
+    r.header.routing_id = comm_pb2.Header.JOBS
+    r.header.toNode = str(0)
+    
+    msg = r.SerializeToString()
+    return msg
 def buildNS():
     r = comm_pb2.Request()
 
@@ -128,7 +189,8 @@ def sendMsg(msg_out, port):
     r = comm_pb2.Request()
     r.ParseFromString(msg_in)
 #    print msg_in
-    print r.body.job_status
+    print r.body.job_status 
+    print r.header.reply_msg
     
 
     s.close
@@ -163,7 +225,9 @@ if __name__ == '__main__':
     
     name_space = "sign_up"
     ownerId = 123
-    signinReq = buildSigninJob(name_space, comm_pb2.JobOperation.ADDJOB, ownerId)    
+#    signinReq = buildSigninJob(name_space, comm_pb2.JobOperation.ADDJOB, ownerId)    
+#    signinReq = buildSignupJob("sign_in", comm_pb2.JobOperation.ADDJOB, ownerId)
+    signinReq = buildCourseDescJob("getdescription", comm_pb2.JobOperation.ADDJOB, ownerId)
     sendMsg(signinReq, 5573)   
 
 
