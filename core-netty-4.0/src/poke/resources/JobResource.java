@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 
 import poke.server.Server;
 import poke.server.ServerInitializer;
@@ -66,6 +67,7 @@ public class JobResource implements Resource {
 	private static final String logIn = "sign_in";
 	private static final String listCourses = "listcourses";
 	private static final String getDescription = "getdescription";
+	private static final String addQuestion = "questionadd";	
 	private static Map<String, Request> requestMap = new HashMap<String, Request>();
 	private static Map<String, Channel> chMap = new HashMap<String, Channel>();
 	
@@ -400,6 +402,164 @@ public class JobResource implements Resource {
 						}
 
 					}
+					if (listCourses.equals(jobOp.getData().getNameSpace())) {
+						// list all courses
+					
+						logger.info("it is a list course job");
+						HashMap<String, String> credentials = new HashMap<String, String>();
+						List<NameValueSet> courseList = new ArrayList<NameValueSet>();
+						int iuId = 0;
+						if (jobOp.getData().getOptions() != null) {
+							List<NameValueSet> nvList = jobOp.getData()
+									.getOptions().getNodeList();
+
+							HashMap<String, String> filters = new HashMap<String, String>();
+							String uId = null;
+							for (NameValueSet nvPair : nvList) {
+								credentials
+								.put(nvPair.getName(), nvPair.getValue());
+								filters.put(nvPair.getName(), nvPair.getValue());
+								if (nvPair.getName().equals("uid"))
+									uId = nvPair.getValue();
+								logger.info("/n*****uId*************"+uId);
+								iuId = Integer.parseInt("1");
+								
+							}
+
+							// TODO retrieve list of courses from DB
+							List<String> list = new ArrayList<String>();
+							List<DBObject> dbObj = new ArrayList<DBObject>();
+							dbObj = MongoStorage.getCoursesByuId(iuId);
+
+							logger.info("credentials: " + credentials.toString());
+							
+							for(int i = 0;i<dbObj.size();i++){
+								BasicDBObject result2 = (BasicDBObject) dbObj.get(i);
+								list.add(result2.getString("name"));
+
+							}
+							
+							for(int i = 0; i < list.size(); i++)
+							{
+								
+						        logger.info("this is Courses" +list.get(i));
+						        NameValueSet.Builder cb = NameValueSet.newBuilder();
+						        cb.setNodeType(NameValueSet.NodeType.NODE);
+						        cb.setName(listCourses);
+						        cb.setValue(list.get(i));
+						        cb.build();
+						        courseList.add(cb.build());
+						        
+							}
+							// list of courses should be a list of NameValueSet
+							
+				
+
+							// reply success
+							Request.Builder rb = Request.newBuilder();
+							// metadata
+							rb.setHeader(ResourceUtil.buildHeader(
+									request.getHeader().getRoutingId(), PokeStatus.SUCCESS, 
+									"listing successful", request.getHeader().getOriginator(),request.getHeader().getTag(),leaderId));						
+
+							// payload
+							Payload.Builder pb = Payload.newBuilder();
+							JobStatus.Builder jb = JobStatus.newBuilder();
+							jb.setStatus(PokeStatus.SUCCESS);
+							jb.setJobId(jobOp.getJobId());
+							jb.setJobState(JobDesc.JobCode.JOBRECEIVED);
+							pb.setJobStatus(jb.build());
+
+							
+							JobOperation.Builder jo = JobOperation.newBuilder();
+							jo.setAction(JobAction.ADDJOB);
+							jo.setJobId(jobOp.getJobId());
+
+							JobDesc.Builder jDescBuilder = JobDesc.newBuilder();
+							jDescBuilder.setJobId(jobOp.getJobId());
+							jDescBuilder.setNameSpace(listCourses);
+							jDescBuilder.setOwnerId(jobOp.getData()
+									.getOwnerId());
+							jDescBuilder.setStatus(JobCode.JOBRECEIVED);
+							for(int i= 0; i < courseList.size();i++){
+								
+								jDescBuilder.setOptions(courseList.get(i));
+							}
+							
+							// set courseList using jDescBuilder.setOptions()
+							
+							
+							jo.setData(jDescBuilder.build());
+
+							pb.setJobOp(jo.build());
+
+							rb.setBody(pb.build());
+
+							reply = rb.build();
+						}
+
+					}
+					if(addQuestion.equals(jobOp.getData().getNameSpace())){
+							
+						if (jobOp.getData().getOptions() != null) {
+							List<NameValueSet> nvList = jobOp.getData()
+									.getOptions().getNodeList();
+
+							HashMap<String, String> credentials = new HashMap<String, String>();
+							int iowner = 0;
+							for (NameValueSet nvPair : nvList) {
+								credentials.put(nvPair.getName(),
+										nvPair.getValue());
+							}
+							logger.info("#######Credentials: "
+									+ credentials.toString() + "#######");
+							String title, owner, description, postdate;
+						
+							title  = description = postdate = owner = null;
+							
+							for (NameValueSet nvPair : nvList) {
+								credentials
+										.put(nvPair.getName(), nvPair.getValue());
+								if (nvPair.getName().equals("title"))
+									title = nvPair.getValue();
+								if (nvPair.getName().equals("owner"))
+									owner = nvPair.getValue();
+									iowner = Integer.parseInt(owner);
+								if (nvPair.getName().equals("description"))
+									description = nvPair.getValue();
+								if (nvPair.getName().equals("postdate"))
+									postdate = nvPair.getValue();
+							}
+							MongoStorage.addQuestion(title, iowner, description,
+									postdate);
+
+							logger.info("credentials: " + credentials.toString());
+							
+							logger.info("credentials: " + credentials.toString());
+
+							// reply success
+							Request.Builder rb = Request.newBuilder();
+							// metadata
+							rb.setHeader(ResourceUtil.buildHeader(
+									request.getHeader().getRoutingId(), PokeStatus.SUCCESS, 
+									"sign up successful", request.getHeader().getOriginator(),request.getHeader().getTag(),leaderId));						
+
+							// payload
+							Payload.Builder pb = Payload.newBuilder();
+							JobStatus.Builder jb = JobStatus.newBuilder();
+							jb.setStatus(PokeStatus.SUCCESS);
+							jb.setJobId(jobOp.getJobId());
+							jb.setJobState(JobDesc.JobCode.JOBRECEIVED);
+							pb.setJobStatus(jb.build());
+
+							rb.setBody(pb.build());
+
+							reply = rb.build();
+
+
+
+						
+					}
 
 				} else if (jobAction.equals(JobAction.LISTJOBS)) {
 					if (listCourses.equals(jobOp.getData().getNameSpace())) {
@@ -456,7 +616,9 @@ public class JobResource implements Resource {
 
 			}
 		}
+		}
 		return reply;
+		
 
 	}
 	public static Map<String, Channel> getChMap() {

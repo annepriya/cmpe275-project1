@@ -171,6 +171,85 @@ def buildNS():
 
     m = r.SerializeToString()
     return m
+	
+def buildListCourse(name_space, jobAction, ownerId):
+
+	jobId = str(int(round(time.time() * 1000)))
+	
+	r = comm_pb2.Request()
+	
+	r.body.job_op.job_id = jobId
+	r.body.job_op.action = jobAction
+    
+	r.body.job_op.data.name_space = name_space
+	r.body.job_op.data.owner_id = ownerId
+	r.body.job_op.data.job_id = jobId
+	r.body.job_op.data.status = comm_pb2.JobDesc.JOBQUEUED
+    
+	r.body.job_op.data.options.node_type = comm_pb2.NameValueSet.NODE
+	r.body.job_op.data.options.name = "operation"
+	r.body.job_op.data.options.value = "listcourses"
+    
+	uId = comm_pb2.NameValueSet()
+	uId.node_type = comm_pb2.NameValueSet.NODE
+	uId.name = "uId"
+	uId.value = "123"
+  	
+  	r.body.job_op.data.options.node.extend([uId])
+	
+	r.header.originator = "localhost:80"  
+	r.header.routing_id = comm_pb2.Header.JOBS
+	r.header.toNode = str(0)
+    
+	msg = r.SerializeToString()
+	return msg	
+	
+def buildQuestionJob(name_space, jobAction, ownerId):
+
+	r = comm_pb2.Request()    
+
+	r.body.job_op.job_id = jobId
+	r.body.job_op.action = jobAction
+    
+	r.body.job_op.data.name_space = name_space
+	r.body.job_op.data.owner_id = ownerId
+	r.body.job_op.data.job_id = jobId
+	r.body.job_op.data.status = comm_pb2.JobDesc.JOBQUEUED
+    
+	r.body.job_op.data.options.node_type = comm_pb2.NameValueSet.NODE
+	r.body.job_op.data.options.name = "operation"
+	r.body.job_op.data.options.value = "QuestionJob"
+    
+	title = comm_pb2.NameValueSet()
+	title.node_type = comm_pb2.NameValueSet.NODE
+	title.name = "title"
+	title.value = "core-netty"
+    
+	owner = comm_pb2.NameValueSet()
+	owner.node_type = comm_pb2.NameValueSet.NODE
+	owner.name = "owner"
+	password.value = "123"
+    
+	description = comm_pb2.NameValueSet()
+	description.node_type = comm_pb2.NameValueSet.NODE
+	description.name = " description"
+	description.value = "What is core netty"
+    
+	postdate = comm_pb2.NameValueSet()
+	postdate.node_type = comm_pb2.NameValueSet.NODE
+	postdate.name = "postdate"
+	postdate.value = "04/07/2014"
+	
+	r.body.job_op.data.options.node.extend([title,owner,description,postdate])		
+	r.header.originator = "localhost:80"  
+	r.header.routing_id = comm_pb2.Header.JOBS
+	r.header.toNode = str(0)
+    
+	msg = r.SerializeToString()
+	return msg
+	
+	
+
 
 def sendMsg(msg_out, port):
     s = socket.socket()         
@@ -223,12 +302,23 @@ if __name__ == '__main__':
     #UDP_PORT = 8080
     #serverPort = getBroadcastMsg(UDP_PORT)   
     
-    name_space = "sign_up"
-    ownerId = 123
+    #name_space = "sign_up"
+    #ownerId = 123
 #    signinReq = buildSigninJob(name_space, comm_pb2.JobOperation.ADDJOB, ownerId)    
-#    signinReq = buildSignupJob("sign_in", comm_pb2.JobOperation.ADDJOB, ownerId)
-    signinReq = buildCourseDescJob("getdescription", comm_pb2.JobOperation.ADDJOB, ownerId)
-    sendMsg(signinReq, 5573)   
+#   signinReq = buildSignupJob("sign_in", comm_pb2.JobOperation.ADDJOB, ownerId)
+    #signinReq = buildCourseDescJob("getdescription", comm_pb2.JobOperation.ADDJOB, ownerId)
+    #sendMsg(signinReq, 5573)   
+    
+	
+	name_space = "listcourses"
+	ownerId = 123;
+	listcourseReq = buildListCourse(name_space, comm_pb2.JobOperation.ADDJOB, ownerId)
+	sendMsg(listcourseReq,5573)
+
+	#name_space = "questionadd"
+	#ownerId = 123;
+	#addQuestion = buildQuestionJob(name_space, comm_pb2.JobOperation.ADDJOB, ownerId)
+	#sentMsg(addquestionReq,5573)
 
 
 
