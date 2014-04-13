@@ -290,6 +290,7 @@ def sendMsg(msg_out, port):
 #    print msg_in
     print r.body.job_status 
     print r.header.reply_msg
+    print r.body.job_op.data.options
     
 
     s.close
@@ -332,7 +333,7 @@ if __name__ == '__main__':
     
     name_space = "competition"
     ownerId = 123;
-    listcourseReq = buildCompetitionJob(name_space, comm_pb2.JobOperation.ADDJOB, ownerId)
+    listcourseReq = buildListCourse(name_space, comm_pb2.JobOperation.ADDJOB, ownerId)
     sendMsg(listcourseReq, 5573)
 
     # name_space = "questionadd"
