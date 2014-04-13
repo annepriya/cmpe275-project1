@@ -13,8 +13,8 @@ project_base="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # which protoc that you built
 #PROTOC_HOME=/usr/local/protobuf-2.4.1/
-PROTOC_HOME=/usr/local/protobuf-2.5.0/
+PROTOC_HOME=D:/protoc-2.5.0-win32
 
-rm -r ${project_base}/generated/*
+#rm -r ${project_base}/generated/*
 
-$PROTOC_HOME/bin/protoc --proto_path=${project_base}/resources --java_out=${project_base}/generated ${project_base}/resources/comm.proto
+$PROTOC_HOME/protoc --proto_path=${project_base}/resources --java_out=${project_base}/generated ${project_base}/resources/comm.proto

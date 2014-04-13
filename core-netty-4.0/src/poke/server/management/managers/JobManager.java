@@ -24,7 +24,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicReference;
@@ -59,11 +61,18 @@ import eye.Comm.Request;
 public class JobManager {
 	protected static Logger logger = LoggerFactory.getLogger("management");
 	protected static AtomicReference<JobManager> instance = new AtomicReference<JobManager>();
+	private static final String competition = "competition";
 
 	private String nodeId;
 	private ServerConf configFile;
 	LinkedBlockingDeque<JobBid> bidQueue;
-	private static Map<String,JobBid> bidMap;
+	private static Map<String, JobBid> bidMap;
+	private static final String getMoreCourses = "getmorecourses";
+	private Map<String, Channel> channelMap = new HashMap<String, Channel>();
+
+	public void addToChannelMap(String jobId, Channel ch) {
+		channelMap.put(jobId, ch);
+	}
 
 	public static JobManager getInstance(String id, ServerConf configFile) {
 		instance.compareAndSet(null, new JobManager(id, configFile));
@@ -77,7 +86,7 @@ public class JobManager {
 	public JobManager(String nodeId, ServerConf configFile) {
 		this.nodeId = nodeId;
 		this.configFile = configFile;
-		this.bidMap = new HashMap<String,JobBid>();
+		this.bidMap = new HashMap<String, JobBid>();
 		bidQueue = new LinkedBlockingDeque<JobBid>();
 	}
 
@@ -90,28 +99,43 @@ public class JobManager {
 	 */
 	public void processRequest(JobProposal req) {
 
-		logger.info("\n**********\nRECEIVED NEW JOB PROPOSAL ID:"+req.getJobId()+"\n**********");
+		String leaderId = ElectionManager.getInstance().getLeader();
+
+		logger.info("\n**********\nRECEIVED NEW JOB PROPOSAL ID:"
+				+ req.getJobId() + "\n**********");
 		Management.Builder mb = Management.newBuilder();
 		JobBid.Builder jb = JobBid.newBuilder();
 		jb.setJobId(req.getJobId());
 		jb.setNameSpace(req.getNameSpace());
 		jb.setOwnerId(Long.parseLong(nodeId));
-		jb.setBid(1); // TODO randomize this
+		int bid = (int)Math.floor(Math.random()+0.5);
+		jb.setBid(bid); 
 
 		mb.setJobBid(jb.build());
 
 		Management jobBid = mb.build();
 
-		String leaderId = ElectionManager.getInstance().getLeader();
+		if (req.getNameSpace().equals(getMoreCourses)||req.getNameSpace().equals(competition)) {
 
-		NodeDesc leaderNode = configFile.getNearest().getNearestNodes().get(leaderId);
+			Channel ch = channelMap.get(req.getJobId());
+			ch.writeAndFlush(jobBid);
+			
+			logger.info("\n**********sent a job bid with Job Id: **********"+req.getJobId());
 
-		InetSocketAddress sa = new InetSocketAddress(leaderNode.getHost(),
-				leaderNode.getMgmtPort());
+		} else {
 
-		Channel ch = connectToManagement(sa);
-		ch.writeAndFlush(jobBid);
-//		ManagementQueue.enqueueResponse(jobBid, ch);
+			NodeDesc leaderNode = configFile.getNearest().getNearestNodes()
+					.get(leaderId);
+
+			InetSocketAddress sa = new InetSocketAddress(leaderNode.getHost(),
+					leaderNode.getMgmtPort());
+
+			Channel ch = connectToManagement(sa);
+			ch.writeAndFlush(jobBid);
+			logger.info("\n**********sent a job bid with Job Id: **********"+req.getJobId());
+
+		}
+		// ManagementQueue.enqueueResponse(jobBid, ch);
 
 	}
 
@@ -132,7 +156,7 @@ public class JobManager {
 			channelFuture = b.connect(sa);
 			channelFuture.awaitUninterruptibly(5000l);
 
-			logger.info("connect successful");
+			
 
 		} catch (Exception ex) {
 			logger.debug("failed to initialize the election connection");
@@ -154,9 +178,8 @@ public class JobManager {
 	 *            The bid
 	 */
 	public void processRequest(JobBid req) {
-		logger.info("\n**********\nRECEIVED NEW JOB BID"+"\n\n**********");
-		// TODO queuing is not proper. it send the same job to all nodes that respond positively 
-		//leader receives bid
+		logger.info("\n**********\nRECEIVED NEW JOB BID" + "\n\n**********");
+		
 		String leaderId = ElectionManager.getInstance().getLeader();
 		if (leaderId != null && leaderId.equalsIgnoreCase(nodeId)) {
 			bidQueue.add(req);
@@ -164,42 +187,69 @@ public class JobManager {
 				return;
 			}
 			bidMap.put(req.getJobId(), req);
-			if(req.getBid() == 1) {
+			logger.info("****************Bid value********"+req.getBid());
+			if (req.getBid() == 1) {
 				Map<String, Request> requestMap = JobResource.getRequestMap();
 				Request jobOperation = requestMap.get(req.getJobId());
-				String toNodeId = req.getOwnerId()+"";
-				/*Header header = ResourceUtil.buildHeader(jobOperation.getHeader().getRoutingId(), null , "request dispatched", 
-						                                 jobOperation.getHeader().getOriginator(), null, bid.getOwnerId()+"");
-				*/
-				Request.Builder rb = Request.newBuilder(jobOperation);					
+				String toNodeId = req.getOwnerId() + "";
+				
+				Request.Builder rb = Request.newBuilder(jobOperation);
 				Header.Builder hbldr = rb.getHeaderBuilder();
 				hbldr.setToNode(toNodeId);
 				hbldr.setRoutingId(Header.Routing.JOBS);
 				rb.setHeader(hbldr.build());
 				Request jobDispatched = rb.build();
-				NodeDesc slaveNode = configFile.getNearest().getNode(toNodeId);
 
-				InetSocketAddress sa = new InetSocketAddress(slaveNode.getHost(),
-						slaveNode.getPort());
+				if (jobOperation.getBody().getJobOp().getData().getNameSpace()
+						.equals(getMoreCourses)||jobOperation.getBody().getJobOp().getData().getNameSpace()
+						.equals(competition)) {
 
-				Channel ch = connectToPublic(sa);
-				
-				ChannelQueue queue = QueueFactory.getInstance(ch);
-//				ch.writeAndFlush(jobDispatched);
-				queue.enqueueResponse(jobDispatched, ch);
+					List<String> leaderList = new ArrayList<String>();
+					leaderList.add(new String("192.168.0.61:5570"));
+					leaderList.add(new String("192.168.0.60:5573"));
+					
+
+					String destHost = null;
+					int destPort = 0;
+					for (String destination : leaderList) {
+						String[] dest = destination.split(":");
+						destHost = dest[0];
+						destPort = Integer.parseInt(dest[1]);
+
+
+						InetSocketAddress sa = new InetSocketAddress(destHost,
+								destPort);
+
+						Channel ch = connectToPublic(sa);
+						ChannelQueue queue = QueueFactory.getInstance(ch);
+						
+						logger.info("****************Job Request being dispatched to leaders********");
+
+						queue.enqueueResponse(jobDispatched, ch);
+					}
+
+				} else {
+
+					NodeDesc slaveNode = configFile.getNearest().getNode(
+							toNodeId);
+
+					InetSocketAddress sa = new InetSocketAddress(
+							slaveNode.getHost(), slaveNode.getPort());
+
+					Channel ch = connectToPublic(sa);
+
+					ChannelQueue queue = QueueFactory.getInstance(ch);
+					logger.info("****************Job Request being dispatched to slave nodes********");
+					queue.enqueueResponse(jobDispatched, ch);
+
+				}
 
 			}
-		
-				
+
 		}
-		
-		
-		
-		
-		
-		
+
 	}
-	
+
 	public Channel connectToPublic(InetSocketAddress sa) {
 		// Start the connection attempt.
 		ChannelFuture channelFuture = null;

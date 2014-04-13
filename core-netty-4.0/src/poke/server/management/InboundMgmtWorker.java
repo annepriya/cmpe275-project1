@@ -97,9 +97,10 @@ public class InboundMgmtWorker extends Thread {
 				} else if (req.hasGraph()) {
 					NetworkManager.getInstance().processRequest(req.getGraph(), msg.channel, msg.sa);
 				} else if (req.hasJobBid()) {
-					JobManager.getInstance().processRequest(req.getJobBid());
+					JobManager.getInstance().processRequest(req.getJobBid());					
 				} else if (req.hasJobPropose()) {
-					JobManager.getInstance().processRequest(req.getJobPropose());
+					JobManager.getInstance().addToChannelMap(req.getJobPropose().getJobId(), msg.channel);
+					JobManager.getInstance().processRequest(req.getJobPropose());					
 				} else
 					logger.error("Unknown management message");
 

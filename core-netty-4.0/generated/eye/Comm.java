@@ -253,6 +253,24 @@ public final class Comm {
      */
     eye.Comm.NameValueSetOrBuilder getNodeOrBuilder(
         int index);
+
+    // optional bytes file_byte = 5;
+    /**
+     * <code>optional bytes file_byte = 5;</code>
+     *
+     * <pre>
+     *bytearray value for a name
+     * </pre>
+     */
+    boolean hasFileByte();
+    /**
+     * <code>optional bytes file_byte = 5;</code>
+     *
+     * <pre>
+     *bytearray value for a name
+     * </pre>
+     */
+    com.google.protobuf.ByteString getFileByte();
   }
   /**
    * Protobuf type {@code NameValueSet}
@@ -336,6 +354,11 @@ public final class Comm {
                 mutable_bitField0_ |= 0x00000008;
               }
               node_.add(input.readMessage(eye.Comm.NameValueSet.PARSER, extensionRegistry));
+              break;
+            }
+            case 42: {
+              bitField0_ |= 0x00000008;
+              fileByte_ = input.readBytes();
               break;
             }
           }
@@ -629,11 +652,36 @@ public final class Comm {
       return node_.get(index);
     }
 
+    // optional bytes file_byte = 5;
+    public static final int FILE_BYTE_FIELD_NUMBER = 5;
+    private com.google.protobuf.ByteString fileByte_;
+    /**
+     * <code>optional bytes file_byte = 5;</code>
+     *
+     * <pre>
+     *bytearray value for a name
+     * </pre>
+     */
+    public boolean hasFileByte() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    /**
+     * <code>optional bytes file_byte = 5;</code>
+     *
+     * <pre>
+     *bytearray value for a name
+     * </pre>
+     */
+    public com.google.protobuf.ByteString getFileByte() {
+      return fileByte_;
+    }
+
     private void initFields() {
       nodeType_ = eye.Comm.NameValueSet.NodeType.NODE;
       name_ = "";
       value_ = "";
       node_ = java.util.Collections.emptyList();
+      fileByte_ = com.google.protobuf.ByteString.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -669,6 +717,9 @@ public final class Comm {
       for (int i = 0; i < node_.size(); i++) {
         output.writeMessage(4, node_.get(i));
       }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeBytes(5, fileByte_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -693,6 +744,10 @@ public final class Comm {
       for (int i = 0; i < node_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(4, node_.get(i));
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(5, fileByte_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -827,6 +882,8 @@ public final class Comm {
         } else {
           nodeBuilder_.clear();
         }
+        fileByte_ = com.google.protobuf.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -876,6 +933,10 @@ public final class Comm {
         } else {
           result.node_ = nodeBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.fileByte_ = fileByte_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -930,6 +991,9 @@ public final class Comm {
               nodeBuilder_.addAllMessages(other.node_);
             }
           }
+        }
+        if (other.hasFileByte()) {
+          setFileByte(other.getFileByte());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -1478,6 +1542,58 @@ public final class Comm {
           node_ = null;
         }
         return nodeBuilder_;
+      }
+
+      // optional bytes file_byte = 5;
+      private com.google.protobuf.ByteString fileByte_ = com.google.protobuf.ByteString.EMPTY;
+      /**
+       * <code>optional bytes file_byte = 5;</code>
+       *
+       * <pre>
+       *bytearray value for a name
+       * </pre>
+       */
+      public boolean hasFileByte() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional bytes file_byte = 5;</code>
+       *
+       * <pre>
+       *bytearray value for a name
+       * </pre>
+       */
+      public com.google.protobuf.ByteString getFileByte() {
+        return fileByte_;
+      }
+      /**
+       * <code>optional bytes file_byte = 5;</code>
+       *
+       * <pre>
+       *bytearray value for a name
+       * </pre>
+       */
+      public Builder setFileByte(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
+        fileByte_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bytes file_byte = 5;</code>
+       *
+       * <pre>
+       *bytearray value for a name
+       * </pre>
+       */
+      public Builder clearFileByte() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        fileByte_ = getDefaultInstance().getFileByte();
+        onChanged();
+        return this;
       }
 
       // @@protoc_insertion_point(builder_scope:NameValueSet)
@@ -19909,74 +20025,74 @@ public final class Comm {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\ncomm.proto\"\224\001\n\014NameValueSet\022)\n\tnode_ty" +
+      "\n\ncomm.proto\"\247\001\n\014NameValueSet\022)\n\tnode_ty" +
       "pe\030\001 \002(\0162\026.NameValueSet.NodeType\022\014\n\004name" +
       "\030\002 \001(\t\022\r\n\005value\030\003 \001(\t\022\033\n\004node\030\004 \003(\0132\r.Na" +
-      "meValueSet\"\037\n\010NodeType\022\010\n\004NODE\020\001\022\t\n\005VALU" +
-      "E\020\002\"\224\001\n\tNameSpace\022\021\n\005ns_id\030\002 \002(\003:\002-1\022\014\n\004" +
-      "name\030\003 \001(\t\022\014\n\004desc\030\004 \001(\t\022\017\n\007created\030\005 \001(" +
-      "\003\022\025\n\rlast_modified\030\006 \001(\003\022\r\n\005owner\030\007 \001(\t\022" +
-      "!\n\nproperties\030\010 \001(\0132\r.NameValueSet\"\352\001\n\007J" +
-      "obDesc\022\022\n\nname_space\030\001 \002(\t\022\020\n\010owner_id\030\002" +
-      " \002(\003\022\016\n\006job_id\030\003 \002(\t\022 \n\006status\030\004 \002(\0162\020.J",
-      "obDesc.JobCode\022\036\n\007options\030\005 \001(\0132\r.NameVa" +
-      "lueSet\"g\n\007JobCode\022\016\n\nJOBUNKNOWN\020\001\022\017\n\013JOB" +
-      "RECEIVED\020\002\022\r\n\tJOBQUEUED\020\003\022\016\n\nJOBRUNNING\020" +
-      "\004\022\r\n\tJOBKILLED\020d\022\r\n\tJOBFAILED\020e\"#\n\004Ping\022" +
-      "\016\n\006number\030\001 \002(\005\022\013\n\003tag\030\002 \002(\t\"\341\001\n\022NameSpa" +
-      "ceOperation\022/\n\006action\030\001 \002(\0162\037.NameSpaceO" +
-      "peration.SpaceAction\022\021\n\005ns_id\030\002 \001(\003:\002-1\022" +
-      "\030\n\004data\030\003 \001(\0132\n.NameSpace\022\036\n\007options\030\004 \001" +
-      "(\0132\r.NameValueSet\"M\n\013SpaceAction\022\014\n\010ADDS" +
-      "PACE\020\001\022\017\n\013UPDATESPACE\020\002\022\017\n\013REMOVESPACE\020\003",
-      "\022\016\n\nLISTSPACES\020\004\"H\n\017NameSpaceStatus\022\033\n\006s" +
-      "tatus\030\001 \002(\0162\013.PokeStatus\022\030\n\004data\030\002 \003(\0132\n" +
-      ".NameSpace\"\242\001\n\014JobOperation\022\'\n\006action\030\001 " +
-      "\002(\0162\027.JobOperation.JobAction\022\016\n\006job_id\030\002" +
-      " \001(\t\022\026\n\004data\030\003 \001(\0132\010.JobDesc\"A\n\tJobActio" +
-      "n\022\n\n\006ADDJOB\020\001\022\013\n\007STOPJOB\020\002\022\r\n\tREMOVEJOB\020" +
-      "\003\022\014\n\010LISTJOBS\020\004\"s\n\013JobProposal\022\022\n\nname_s" +
-      "pace\030\001 \002(\t\022\020\n\010owner_id\030\002 \002(\003\022\016\n\006job_id\030\003" +
-      " \002(\t\022\016\n\006weight\030\004 \002(\005\022\036\n\007options\030\005 \001(\0132\r." +
-      "NameValueSet\"K\n\006JobBid\022\022\n\nname_space\030\001 \002",
-      "(\t\022\020\n\010owner_id\030\002 \002(\003\022\016\n\006job_id\030\003 \002(\t\022\013\n\003" +
-      "bid\030\004 \002(\005\"u\n\tJobStatus\022\016\n\006job_id\030\001 \002(\t\022\033" +
-      "\n\006status\030\002 \002(\0162\013.PokeStatus\022#\n\tjob_state" +
-      "\030\003 \002(\0162\020.JobDesc.JobCode\022\026\n\004data\030\004 \003(\0132\010" +
-      ".JobDesc\")\n\013RoutingPath\022\014\n\004node\030\001 \002(\t\022\014\n" +
-      "\004time\030\002 \002(\003\"\244\002\n\006Header\022#\n\nrouting_id\030\001 \002" +
-      "(\0162\017.Header.Routing\022\022\n\noriginator\030\002 \002(\t\022" +
-      "\013\n\003tag\030\003 \001(\t\022\014\n\004time\030\004 \001(\003\022\037\n\nreply_code" +
-      "\030\005 \001(\0162\013.PokeStatus\022\021\n\treply_msg\030\006 \001(\t\022\032" +
-      "\n\004path\030\007 \003(\0132\014.RoutingPath\022\016\n\006toNode\030\010 \001",
-      "(\t\022\036\n\007options\030\t \003(\0132\r.NameValueSet\"F\n\007Ro" +
-      "uting\022\010\n\004PING\020\002\022\016\n\nNAMESPACES\020\003\022\010\n\004JOBS\020" +
-      "\004\022\013\n\007REPORTS\020\n\022\n\n\006MANAGE\020d\"\254\001\n\007Payload\022\023" +
-      "\n\004ping\030\001 \001(\0132\005.Ping\022%\n\010space_op\030\002 \001(\0132\023." +
-      "NameSpaceOperation\022\035\n\006job_op\030\003 \001(\0132\r.Job" +
-      "Operation\022\036\n\njob_status\030\006 \001(\0132\n.JobStatu" +
-      "s\022&\n\014space_status\030\007 \001(\0132\020.NameSpaceStatu" +
-      "s\":\n\007Request\022\027\n\006header\030\001 \002(\0132\007.Header\022\026\n" +
-      "\004body\030\002 \002(\0132\010.Payload\".\n\tHeartbeat\022\017\n\007no" +
-      "de_id\030\001 \002(\t\022\020\n\010time_ref\030\002 \002(\003\"\252\001\n\007Networ",
-      "k\022\017\n\007node_id\030\001 \002(\t\022&\n\006action\030\002 \002(\0162\026.Net" +
-      "work.NetworkAction\"f\n\rNetworkAction\022\014\n\010N" +
-      "ODEJOIN\020\001\022\r\n\tNODELEAVE\020\002\022\014\n\010NODEDEAD\020\003\022\r" +
-      "\n\tCREATEMAP\0207\022\014\n\010ANNOUNCE\0208\022\r\n\010SHUTDOWN\020" +
-      "\347\007\"\330\001\n\016LeaderElection\022\017\n\007node_id\030\001 \002(\t\022\021" +
-      "\n\tballot_id\030\002 \002(\t\022\014\n\004desc\030\004 \002(\t\022(\n\004vote\030" +
-      "\005 \002(\0162\032.LeaderElection.VoteAction\022\017\n\007exp" +
-      "ires\030\006 \001(\003\"Y\n\nVoteAction\022\014\n\010ELECTION\020\001\022\014" +
-      "\n\010NOMINATE\020\002\022\013\n\007ABSTAIN\020\003\022\021\n\rDECLAREWINN" +
-      "ER\020\004\022\017\n\013DECLAREVOID\020\005\"\237\001\n\nManagement\022\027\n\005",
-      "graph\030\001 \001(\0132\010.Network\022\030\n\004beat\030\002 \001(\0132\n.He" +
-      "artbeat\022!\n\010election\030\003 \001(\0132\017.LeaderElecti" +
-      "on\022!\n\013job_propose\030\004 \001(\0132\014.JobProposal\022\030\n" +
-      "\007job_bid\030\005 \001(\0132\007.JobBid*\221\001\n\nPokeStatus\022\n" +
-      "\n\006UKNOWN\020\001\022\013\n\007SUCCESS\020\002\022\013\n\007NOFOUND\020d\022\020\n\014" +
-      "NOINCOMPLETE\020e\022\n\n\006NOAUTH\020f\022\020\n\014NOCONNECTI" +
-      "ON\020g\022\017\n\013NOREACHABLE\020h\022\016\n\nNORESOURCE\020i\022\014\n" +
-      "\007FAILURE\020\307\001B\007\n\003eyeH\001"
+      "meValueSet\022\021\n\tfile_byte\030\005 \001(\014\"\037\n\010NodeTyp" +
+      "e\022\010\n\004NODE\020\001\022\t\n\005VALUE\020\002\"\224\001\n\tNameSpace\022\021\n\005" +
+      "ns_id\030\002 \002(\003:\002-1\022\014\n\004name\030\003 \001(\t\022\014\n\004desc\030\004 " +
+      "\001(\t\022\017\n\007created\030\005 \001(\003\022\025\n\rlast_modified\030\006 " +
+      "\001(\003\022\r\n\005owner\030\007 \001(\t\022!\n\nproperties\030\010 \001(\0132\r" +
+      ".NameValueSet\"\352\001\n\007JobDesc\022\022\n\nname_space\030" +
+      "\001 \002(\t\022\020\n\010owner_id\030\002 \002(\003\022\016\n\006job_id\030\003 \002(\t\022",
+      " \n\006status\030\004 \002(\0162\020.JobDesc.JobCode\022\036\n\007opt" +
+      "ions\030\005 \001(\0132\r.NameValueSet\"g\n\007JobCode\022\016\n\n" +
+      "JOBUNKNOWN\020\001\022\017\n\013JOBRECEIVED\020\002\022\r\n\tJOBQUEU" +
+      "ED\020\003\022\016\n\nJOBRUNNING\020\004\022\r\n\tJOBKILLED\020d\022\r\n\tJ" +
+      "OBFAILED\020e\"#\n\004Ping\022\016\n\006number\030\001 \002(\005\022\013\n\003ta" +
+      "g\030\002 \002(\t\"\341\001\n\022NameSpaceOperation\022/\n\006action" +
+      "\030\001 \002(\0162\037.NameSpaceOperation.SpaceAction\022" +
+      "\021\n\005ns_id\030\002 \001(\003:\002-1\022\030\n\004data\030\003 \001(\0132\n.NameS" +
+      "pace\022\036\n\007options\030\004 \001(\0132\r.NameValueSet\"M\n\013" +
+      "SpaceAction\022\014\n\010ADDSPACE\020\001\022\017\n\013UPDATESPACE",
+      "\020\002\022\017\n\013REMOVESPACE\020\003\022\016\n\nLISTSPACES\020\004\"H\n\017N" +
+      "ameSpaceStatus\022\033\n\006status\030\001 \002(\0162\013.PokeSta" +
+      "tus\022\030\n\004data\030\002 \003(\0132\n.NameSpace\"\242\001\n\014JobOpe" +
+      "ration\022\'\n\006action\030\001 \002(\0162\027.JobOperation.Jo" +
+      "bAction\022\016\n\006job_id\030\002 \001(\t\022\026\n\004data\030\003 \001(\0132\010." +
+      "JobDesc\"A\n\tJobAction\022\n\n\006ADDJOB\020\001\022\013\n\007STOP" +
+      "JOB\020\002\022\r\n\tREMOVEJOB\020\003\022\014\n\010LISTJOBS\020\004\"s\n\013Jo" +
+      "bProposal\022\022\n\nname_space\030\001 \002(\t\022\020\n\010owner_i" +
+      "d\030\002 \002(\003\022\016\n\006job_id\030\003 \002(\t\022\016\n\006weight\030\004 \002(\005\022" +
+      "\036\n\007options\030\005 \001(\0132\r.NameValueSet\"K\n\006JobBi",
+      "d\022\022\n\nname_space\030\001 \002(\t\022\020\n\010owner_id\030\002 \002(\003\022" +
+      "\016\n\006job_id\030\003 \002(\t\022\013\n\003bid\030\004 \002(\005\"u\n\tJobStatu" +
+      "s\022\016\n\006job_id\030\001 \002(\t\022\033\n\006status\030\002 \002(\0162\013.Poke" +
+      "Status\022#\n\tjob_state\030\003 \002(\0162\020.JobDesc.JobC" +
+      "ode\022\026\n\004data\030\004 \003(\0132\010.JobDesc\")\n\013RoutingPa" +
+      "th\022\014\n\004node\030\001 \002(\t\022\014\n\004time\030\002 \002(\003\"\244\002\n\006Heade" +
+      "r\022#\n\nrouting_id\030\001 \002(\0162\017.Header.Routing\022\022" +
+      "\n\noriginator\030\002 \002(\t\022\013\n\003tag\030\003 \001(\t\022\014\n\004time\030" +
+      "\004 \001(\003\022\037\n\nreply_code\030\005 \001(\0162\013.PokeStatus\022\021" +
+      "\n\treply_msg\030\006 \001(\t\022\032\n\004path\030\007 \003(\0132\014.Routin",
+      "gPath\022\016\n\006toNode\030\010 \001(\t\022\036\n\007options\030\t \003(\0132\r" +
+      ".NameValueSet\"F\n\007Routing\022\010\n\004PING\020\002\022\016\n\nNA" +
+      "MESPACES\020\003\022\010\n\004JOBS\020\004\022\013\n\007REPORTS\020\n\022\n\n\006MAN" +
+      "AGE\020d\"\254\001\n\007Payload\022\023\n\004ping\030\001 \001(\0132\005.Ping\022%" +
+      "\n\010space_op\030\002 \001(\0132\023.NameSpaceOperation\022\035\n" +
+      "\006job_op\030\003 \001(\0132\r.JobOperation\022\036\n\njob_stat" +
+      "us\030\006 \001(\0132\n.JobStatus\022&\n\014space_status\030\007 \001" +
+      "(\0132\020.NameSpaceStatus\":\n\007Request\022\027\n\006heade" +
+      "r\030\001 \002(\0132\007.Header\022\026\n\004body\030\002 \002(\0132\010.Payload" +
+      "\".\n\tHeartbeat\022\017\n\007node_id\030\001 \002(\t\022\020\n\010time_r",
+      "ef\030\002 \002(\003\"\252\001\n\007Network\022\017\n\007node_id\030\001 \002(\t\022&\n" +
+      "\006action\030\002 \002(\0162\026.Network.NetworkAction\"f\n" +
+      "\rNetworkAction\022\014\n\010NODEJOIN\020\001\022\r\n\tNODELEAV" +
+      "E\020\002\022\014\n\010NODEDEAD\020\003\022\r\n\tCREATEMAP\0207\022\014\n\010ANNO" +
+      "UNCE\0208\022\r\n\010SHUTDOWN\020\347\007\"\330\001\n\016LeaderElection" +
+      "\022\017\n\007node_id\030\001 \002(\t\022\021\n\tballot_id\030\002 \002(\t\022\014\n\004" +
+      "desc\030\004 \002(\t\022(\n\004vote\030\005 \002(\0162\032.LeaderElectio" +
+      "n.VoteAction\022\017\n\007expires\030\006 \001(\003\"Y\n\nVoteAct" +
+      "ion\022\014\n\010ELECTION\020\001\022\014\n\010NOMINATE\020\002\022\013\n\007ABSTA" +
+      "IN\020\003\022\021\n\rDECLAREWINNER\020\004\022\017\n\013DECLAREVOID\020\005",
+      "\"\237\001\n\nManagement\022\027\n\005graph\030\001 \001(\0132\010.Network" +
+      "\022\030\n\004beat\030\002 \001(\0132\n.Heartbeat\022!\n\010election\030\003" +
+      " \001(\0132\017.LeaderElection\022!\n\013job_propose\030\004 \001" +
+      "(\0132\014.JobProposal\022\030\n\007job_bid\030\005 \001(\0132\007.JobB" +
+      "id*\221\001\n\nPokeStatus\022\n\n\006UKNOWN\020\001\022\013\n\007SUCCESS" +
+      "\020\002\022\013\n\007NOFOUND\020d\022\020\n\014NOINCOMPLETE\020e\022\n\n\006NOA" +
+      "UTH\020f\022\020\n\014NOCONNECTION\020g\022\017\n\013NOREACHABLE\020h" +
+      "\022\016\n\nNORESOURCE\020i\022\014\n\007FAILURE\020\307\001B\007\n\003eyeH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -19988,7 +20104,7 @@ public final class Comm {
           internal_static_NameValueSet_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_NameValueSet_descriptor,
-              new java.lang.String[] { "NodeType", "Name", "Value", "Node", });
+              new java.lang.String[] { "NodeType", "Name", "Value", "Node", "FileByte", });
           internal_static_NameSpace_descriptor =
             getDescriptor().getMessageTypes().get(1);
           internal_static_NameSpace_fieldAccessorTable = new
