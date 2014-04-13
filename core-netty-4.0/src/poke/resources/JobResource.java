@@ -462,7 +462,11 @@ public class JobResource implements Resource {
 								list.add(result2.getString("name"));
 
 							}
-
+							NameValueSet.Builder courses = NameValueSet
+									.newBuilder();
+							courses.setNodeType(NameValueSet.NodeType.VALUE);
+							courses.setName(listCourses);
+							courses.setValue("attached");
 							for (int i = 0; i < list.size(); i++) {
 
 								logger.info("this is Courses" + list.get(i));
@@ -471,8 +475,9 @@ public class JobResource implements Resource {
 								cb.setNodeType(NameValueSet.NodeType.NODE);
 								cb.setName(listCourses);
 								cb.setValue(list.get(i));
-								cb.build();
-								courseList.add(cb.build());
+//								cb.build();
+								courses.addNode(cb.build());
+//								courseList.add(cb.build());
 
 							}
 							// list of courses should be a list of NameValueSet
@@ -504,12 +509,8 @@ public class JobResource implements Resource {
 							jDescBuilder.setOwnerId(jobOp.getData()
 									.getOwnerId());
 							jDescBuilder.setStatus(JobCode.JOBRECEIVED);
-							for (int i = 0; i < courseList.size(); i++) {
 
-								jDescBuilder.setOptions(courseList.get(i));
-								
-							}
-
+							jDescBuilder.setOptions(courses);
 							// set courseList using jDescBuilder.setOptions()
 
 							jo.setData(jDescBuilder.build());
