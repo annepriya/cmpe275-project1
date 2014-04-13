@@ -195,7 +195,7 @@ def buildListCourse(name_space, jobAction, ownerId):
     uId.name = "uId"
     uId.value = "123"
       
-      r.body.job_op.data.options.node.extend([uId])
+    r.body.job_op.data.options.node.extend([uId])
     
     r.header.originator = "localhost:80"  
     r.header.routing_id = comm_pb2.Header.JOBS

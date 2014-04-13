@@ -97,6 +97,7 @@ public class InboundMgmtWorker extends Thread {
 				} else if (req.hasGraph()) {
 					NetworkManager.getInstance().processRequest(req.getGraph(), msg.channel, msg.sa);
 				} else if (req.hasJobBid()) {
+					JobManager.getInstance().addToChannelMap(req.getJobBid().getJobId(), msg.channel);
 					JobManager.getInstance().processRequest(req.getJobBid());					
 				} else if (req.hasJobPropose()) {
 					JobManager.getInstance().addToChannelMap(req.getJobPropose().getJobId(), msg.channel);

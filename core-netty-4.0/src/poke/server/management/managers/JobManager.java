@@ -119,6 +119,7 @@ public class JobManager {
 
 			Channel ch = channelMap.get(req.getJobId());
 			ch.writeAndFlush(jobBid);
+			channelMap.remove(req.getJobId());
 			
 			logger.info("\n**********sent a job bid with Job Id: **********"+req.getJobId());
 
@@ -208,8 +209,16 @@ public class JobManager {
 					leaderList.add(new String("192.168.0.61:5570"));
 					leaderList.add(new String("192.168.0.60:5573"));
 					
+					Channel ch = channelMap.get(req.getJobId());
+					
+					logger.info("****************Job Request being dispatched to leaders********");
+					
+					ch.writeAndFlush(jobDispatched);
+					channelMap.remove(req.getJobId());
+					
+					
 
-					String destHost = null;
+				/*	String destHost = null;
 					int destPort = 0;
 					for (String destination : leaderList) {
 						String[] dest = destination.split(":");
@@ -226,7 +235,7 @@ public class JobManager {
 						logger.info("****************Job Request being dispatched to leaders********");
 
 						queue.enqueueResponse(jobDispatched, ch);
-					}
+					}*/
 
 				} else {
 
@@ -267,7 +276,7 @@ public class JobManager {
 			channelFuture = b.connect(sa);
 			channelFuture.awaitUninterruptibly(5000l);
 
-			logger.info("connect successful");
+			
 
 		} catch (Exception ex) {
 			logger.debug("failed to initialize the election connection");

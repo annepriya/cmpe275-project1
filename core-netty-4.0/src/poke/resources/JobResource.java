@@ -232,9 +232,7 @@ public class JobResource implements Resource {
 							.getNearestNodes().values()) {
 						destHost = nn.getHost();
 						destPort = nn.getMgmtPort();
-
-						logger.info("destination host & port " + destHost
-								+ "& " + destPort);
+						
 
 						InetSocketAddress sa = new InetSocketAddress(destHost,
 								destPort);
@@ -613,7 +611,7 @@ public class JobResource implements Resource {
 				}
 			}
 		}
-		logger.info("************Job request processed*****************");
+		
 		return reply;
 		
 
