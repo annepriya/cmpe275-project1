@@ -507,6 +507,7 @@ public class JobResource implements Resource {
 							for (int i = 0; i < courseList.size(); i++) {
 
 								jDescBuilder.setOptions(courseList.get(i));
+								
 							}
 
 							// set courseList using jDescBuilder.setOptions()

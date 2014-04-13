@@ -180,15 +180,20 @@ public class JobManager {
 	 */
 	public void processRequest(JobBid req) {
 		logger.info("\n**********\nRECEIVED NEW JOB BID" + "\n\n**********");
+		logger.info("****************Bid value********"+req.getBid());
 		
 		String leaderId = ElectionManager.getInstance().getLeader();
 		if (leaderId != null && leaderId.equalsIgnoreCase(nodeId)) {
-			bidQueue.add(req);
 			if (bidMap.containsKey(req.getJobId())) {
 				return;
+			}			
+			if (req.getBid() == 1){
+				bidQueue.add(req);
+			    bidMap.put(req.getJobId(), req);
 			}
-			bidMap.put(req.getJobId(), req);
-			logger.info("****************Bid value********"+req.getBid());
+			
+			
+			
 			if (req.getBid() == 1) {
 				Map<String, Request> requestMap = JobResource.getRequestMap();
 				Request jobOperation = requestMap.get(req.getJobId());
@@ -209,16 +214,17 @@ public class JobManager {
 					leaderList.add(new String("192.168.0.61:5570"));
 					leaderList.add(new String("192.168.0.60:5573"));
 					
-					Channel ch = channelMap.get(req.getJobId());
-					
+					//Channel ch = channelMap.get(req.getJobId());
+					/*
+					String destHost = ch.remoteAddress().
 					logger.info("****************Job Request being dispatched to leaders********");
 					
 					ch.writeAndFlush(jobDispatched);
 					channelMap.remove(req.getJobId());
-					
+					*/
 					
 
-				/*	String destHost = null;
+					String destHost = null;
 					int destPort = 0;
 					for (String destination : leaderList) {
 						String[] dest = destination.split(":");
@@ -231,11 +237,11 @@ public class JobManager {
 
 						Channel ch = connectToPublic(sa);
 						ChannelQueue queue = QueueFactory.getInstance(ch);
-						
+						 
 						logger.info("****************Job Request being dispatched to leaders********");
 
 						queue.enqueueResponse(jobDispatched, ch);
-					}*/
+					}
 
 				} else {
 
@@ -248,7 +254,7 @@ public class JobManager {
 					Channel ch = connectToPublic(sa);
 
 					ChannelQueue queue = QueueFactory.getInstance(ch);
-					logger.info("****************Job Request being dispatched to slave nodes********");
+					logger.info("****************Job Request being dispatched to slave node: ********"+toNodeId);
 					queue.enqueueResponse(jobDispatched, ch);
 
 				}
