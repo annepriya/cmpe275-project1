@@ -163,7 +163,6 @@ public class JobResource implements Resource {
 
 				logger.info("\n**********\nRECEIVED JOB STATUS"
 						+ "\n\n**********");
-				
 
 				// JobStatus
 				String jobId = request.getBody().getJobStatus().getJobId();
@@ -185,7 +184,8 @@ public class JobResource implements Resource {
 
 				JobOperation jobOp = request.getBody().getJobOp();
 
-				logger.info("\n**********JobOperation.JobId: " + jobOp.getJobId()+"\n\n**********");
+				logger.info("\n**********JobOperation.JobId: "
+						+ jobOp.getJobId() + "\n\n**********");
 				requestMap.put(jobOp.getJobId(), request);
 
 				Management.Builder mb = Management.newBuilder();
@@ -202,12 +202,13 @@ public class JobResource implements Resource {
 				String destHost = null;
 				int destPort = 0;
 
-				if (jobOp.getData().getNameSpace().equals(getMoreCourses)||jobOp.getData().getNameSpace().equals(competition)) {
+				if (jobOp.getData().getNameSpace().equals(getMoreCourses)
+						|| jobOp.getData().getNameSpace().equals(competition)) {
 
 					List<String> leaderList = new ArrayList<String>();
-					leaderList.add(new String("192.168.0.61:5670"));
-					leaderList.add(new String("192.168.0.60:5673"));
-					//leaderList.add(new String("192.168.0.230:5573"));
+					leaderList.add(new String("192.168.0.235:5673"));
+					leaderList.add(new String("192.168.0.236:5673"));
+					leaderList.add(new String("192.168.0.241:5573"));
 
 					//
 					for (String destination : leaderList) {
@@ -215,14 +216,12 @@ public class JobResource implements Resource {
 						destHost = dest[0];
 						destPort = Integer.parseInt(dest[1]);
 
-						
-
 						InetSocketAddress sa = new InetSocketAddress(destHost,
 								destPort);
 
 						Channel ch = connectToManagement(sa);
 						ch.writeAndFlush(jobProposal);
-						
+
 						logger.info("\n**********Job proposal sent\n\n**********");
 					}
 
@@ -232,14 +231,19 @@ public class JobResource implements Resource {
 							.getNearestNodes().values()) {
 						destHost = nn.getHost();
 						destPort = nn.getMgmtPort();
-						
 
 						InetSocketAddress sa = new InetSocketAddress(destHost,
 								destPort);
 
-						Channel ch = connectToManagement(sa);
-						ch.writeAndFlush(jobProposal);
-						logger.info("\n**********Job proposal sent\n\n**********");
+						try {
+							Channel ch = connectToManagement(sa);
+							ch.writeAndFlush(jobProposal);
+							logger.info("\n**********Job proposal sent\n\n**********");
+						} catch (Exception e) {
+							logger.info("Exception received while sending job proposal connecting to node: "
+									+ destHost + ":" + destPort);
+						}
+
 						// ManagementQueue.enqueueResponse(jobProposal,ch);
 
 					}
@@ -274,7 +278,6 @@ public class JobResource implements Resource {
 						NameValueSet nvSet = jobOp.getData().getOptions();
 						List<NameValueSet> nvList = null;
 
-						
 						if (nvSet != null) {
 							nvList = nvSet.getNodeList();
 						}
@@ -326,8 +329,6 @@ public class JobResource implements Resource {
 							NameValueSet nvSet = jobOp.getData().getOptions();
 							List<NameValueSet> nvList = null;
 
-							
-
 							if (nvSet != null) {
 								nvList = nvSet.getNodeList();
 							}
@@ -376,7 +377,7 @@ public class JobResource implements Resource {
 
 						if (jobOp.getData().getOptions() != null) {
 							NameValueSet nvSet = jobOp.getData().getOptions();
-							
+
 							String cName = null;
 							if (nvSet != null) {
 								if (nvSet.getName().equals("coursename"))
@@ -430,7 +431,6 @@ public class JobResource implements Resource {
 									.getNameSpace())) {
 						// list all courses
 
-						
 						HashMap<String, String> credentials = new HashMap<String, String>();
 						List<NameValueSet> courseList = new ArrayList<NameValueSet>();
 						int iuId = 0;
@@ -475,9 +475,9 @@ public class JobResource implements Resource {
 								cb.setNodeType(NameValueSet.NodeType.NODE);
 								cb.setName(listCourses);
 								cb.setValue(list.get(i));
-//								cb.build();
+								// cb.build();
 								courses.addNode(cb.build());
-//								courseList.add(cb.build());
+								// courseList.add(cb.build());
 
 							}
 							// list of courses should be a list of NameValueSet
@@ -524,15 +524,16 @@ public class JobResource implements Resource {
 
 					} else if (competition.equals(jobOp.getData()
 							.getNameSpace())) {
-						
+
 						// reply success
 						Request.Builder rb = Request.newBuilder();
 						// metadata
 						rb.setHeader(ResourceUtil.buildHeader(request
 								.getHeader().getRoutingId(),
-								PokeStatus.SUCCESS, "competition request processed",
-								request.getHeader().getOriginator(),
-								request.getHeader().getTag(), leaderId));
+								PokeStatus.SUCCESS,
+								"competition request processed", request
+										.getHeader().getOriginator(), request
+										.getHeader().getTag(), leaderId));
 
 						// payload
 						Payload.Builder pb = Payload.newBuilder();
@@ -545,8 +546,6 @@ public class JobResource implements Resource {
 						rb.setBody(pb.build());
 
 						reply = rb.build();
-
-						
 
 					} else if (addQuestion.equals(jobOp.getData()
 							.getNameSpace())) {
@@ -583,8 +582,6 @@ public class JobResource implements Resource {
 							MongoStorage.addQuestion(title, iowner,
 									description, postdate);
 
-													
-
 							// reply success
 							Request.Builder rb = Request.newBuilder();
 							// metadata
@@ -613,9 +610,8 @@ public class JobResource implements Resource {
 				}
 			}
 		}
-		
+
 		return reply;
-		
 
 	}
 

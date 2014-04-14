@@ -46,9 +46,14 @@ import poke.server.queue.QueueFactory;
 import poke.server.resources.ResourceUtil;
 import eye.Comm.Header;
 import eye.Comm.JobBid;
+import eye.Comm.JobDesc;
+import eye.Comm.JobOperation;
 import eye.Comm.JobProposal;
 import eye.Comm.Management;
+import eye.Comm.Payload;
 import eye.Comm.Request;
+import eye.Comm.JobDesc.JobCode;
+import eye.Comm.JobOperation.JobAction;
 
 /**
  * The job manager class is used by the system to assess and vote on a job. This
@@ -68,6 +73,7 @@ public class JobManager {
 	LinkedBlockingDeque<JobBid> bidQueue;
 	private static Map<String, JobBid> bidMap;
 	private static final String getMoreCourses = "getmorecourses";
+	private static final String listCourses = "listcourses";
 	private Map<String, Channel> channelMap = new HashMap<String, Channel>();
 
 	public void addToChannelMap(String jobId, Channel ch) {
@@ -108,20 +114,22 @@ public class JobManager {
 		jb.setJobId(req.getJobId());
 		jb.setNameSpace(req.getNameSpace());
 		jb.setOwnerId(Long.parseLong(nodeId));
-		int bid = (int)Math.floor(Math.random()+0.5);
-		jb.setBid(bid); 
+		int bid = (int) Math.floor(Math.random() + 0.5);
+		jb.setBid(bid);
 
 		mb.setJobBid(jb.build());
 
 		Management jobBid = mb.build();
 
-		if (req.getNameSpace().equals(getMoreCourses)||req.getNameSpace().equals(competition)) {
+		if (req.getNameSpace().equals(getMoreCourses)
+				|| req.getNameSpace().equals(competition)) {
 
 			Channel ch = channelMap.get(req.getJobId());
 			ch.writeAndFlush(jobBid);
 			channelMap.remove(req.getJobId());
-			
-			logger.info("\n**********sent a job bid with Job Id: **********"+req.getJobId());
+
+			logger.info("\n**********sent a job bid with Job Id: **********"
+					+ req.getJobId());
 
 		} else {
 
@@ -133,7 +141,8 @@ public class JobManager {
 
 			Channel ch = connectToManagement(sa);
 			ch.writeAndFlush(jobBid);
-			logger.info("\n**********sent a job bid with Job Id: **********"+req.getJobId());
+			logger.info("\n**********sent a job bid with Job Id: **********"
+					+ req.getJobId());
 
 		}
 		// ManagementQueue.enqueueResponse(jobBid, ch);
@@ -157,8 +166,6 @@ public class JobManager {
 			channelFuture = b.connect(sa);
 			channelFuture.awaitUninterruptibly(5000l);
 
-			
-
 		} catch (Exception ex) {
 			logger.debug("failed to initialize the election connection");
 
@@ -180,70 +187,113 @@ public class JobManager {
 	 */
 	public void processRequest(JobBid req) {
 		logger.info("\n**********\nRECEIVED NEW JOB BID" + "\n\n**********");
-		logger.info("****************Bid value********"+req.getBid());
-		
+		logger.info("****************Bid value********" + req.getBid());
+
 		String leaderId = ElectionManager.getInstance().getLeader();
 		if (leaderId != null && leaderId.equalsIgnoreCase(nodeId)) {
 			if (bidMap.containsKey(req.getJobId())) {
 				return;
-			}			
-			if (req.getBid() == 1){
-				bidQueue.add(req);
-			    bidMap.put(req.getJobId(), req);
 			}
-			
-			
-			
+
+			if (req.getBid() == 1) {
+				bidQueue.add(req);
+				bidMap.put(req.getJobId(), req);
+			}
+
 			if (req.getBid() == 1) {
 				Map<String, Request> requestMap = JobResource.getRequestMap();
 				Request jobOperation = requestMap.get(req.getJobId());
 				String toNodeId = req.getOwnerId() + "";
-				
-				Request.Builder rb = Request.newBuilder(jobOperation);
-				Header.Builder hbldr = rb.getHeaderBuilder();
-				hbldr.setToNode(toNodeId);
-				hbldr.setRoutingId(Header.Routing.JOBS);
-				rb.setHeader(hbldr.build());
-				Request jobDispatched = rb.build();
 
 				if (jobOperation.getBody().getJobOp().getData().getNameSpace()
-						.equals(getMoreCourses)||jobOperation.getBody().getJobOp().getData().getNameSpace()
-						.equals(competition)) {
+						.equals(getMoreCourses)
+						|| jobOperation.getBody().getJobOp().getData()
+								.getNameSpace().equals(competition)) {
 
-					List<String> leaderList = new ArrayList<String>();
-					leaderList.add(new String("192.168.0.61:5570"));
-					leaderList.add(new String("192.168.0.60:5573"));
-					
-					//Channel ch = channelMap.get(req.getJobId());
 					/*
-					String destHost = ch.remoteAddress().
-					logger.info("****************Job Request being dispatched to leaders********");
+					 * List<String> leaderList = new ArrayList<String>();
+					 * leaderList.add(new String("192.168.0.235:5573"));
+					 * leaderList.add(new String("192.168.0.236:5573"));
+					 * leaderList.add(new String("192.168.0.241:5573"));
+					 */
+
 					
-					ch.writeAndFlush(jobDispatched);
+
+					Request.Builder rb = Request.newBuilder(jobOperation);
+					Header.Builder hbldr = rb.getHeaderBuilder();
+					hbldr.setToNode(toNodeId);
+					hbldr.setRoutingId(Header.Routing.JOBS);
+					rb.setHeader(hbldr.build());
+
+					Payload.Builder pb = rb.getBodyBuilder();
+
+					JobOperation.Builder jobOpBuilder = pb.getJobOpBuilder();
+					jobOpBuilder.setAction(JobAction.ADDJOB);
+
+					JobDesc.Builder jDescBuilder = JobDesc.newBuilder();
+					jDescBuilder.setJobId(req.getJobId());
+					jDescBuilder.setOwnerId(req.getOwnerId());
+					if(jobOperation.getBody().getJobOp().getData()
+								.getNameSpace().equals(competition))
+						jDescBuilder.setNameSpace(competition);
+					else
+						jDescBuilder.setNameSpace(listCourses);
+					jDescBuilder.setStatus(JobCode.JOBQUEUED);
+
+					jobOpBuilder.setData(jDescBuilder.build());
+
+					pb.setJobOp(jobOpBuilder.build());
+					rb.setBody(pb.build());
+					Request jobDispatched = rb.build();
+
+					Channel ch = channelMap.get(req.getJobId());
+					
+					
+
+					InetSocketAddress inetSa = (InetSocketAddress) ch
+							.remoteAddress();
+					String hostname = null;
+					if (inetSa != null)
+						hostname = inetSa.getAddress().getHostAddress();
 					channelMap.remove(req.getJobId());
-					*/
-					
+					logger.info("\n****************HOSTNAME RESOLVED FROM CHANNEL: "
+							+ hostname + "********");
+					int port = 5573;
+					logger.info("****************Job Request being dispatched to leader********");
 
-					String destHost = null;
-					int destPort = 0;
-					for (String destination : leaderList) {
-						String[] dest = destination.split(":");
-						destHost = dest[0];
-						destPort = Integer.parseInt(dest[1]);
+					InetSocketAddress sa = new InetSocketAddress(hostname, port);
+					Channel out = connectToPublic(sa);
+					ChannelQueue queue = QueueFactory.getInstance(out);
+					queue.enqueueResponse(jobDispatched, out);
 
-
-						InetSocketAddress sa = new InetSocketAddress(destHost,
-								destPort);
-
-						Channel ch = connectToPublic(sa);
-						ChannelQueue queue = QueueFactory.getInstance(ch);
-						 
-						logger.info("****************Job Request being dispatched to leaders********");
-
-						queue.enqueueResponse(jobDispatched, ch);
-					}
+					/*
+					 * String destHost = null; int destPort = 0; for (String
+					 * destination : leaderList) { String[] dest =
+					 * destination.split(":"); destHost = dest[0]; destPort =
+					 * Integer.parseInt(dest[1]);
+					 * 
+					 * 
+					 * InetSocketAddress sa = new InetSocketAddress(destHost,
+					 * destPort);
+					 * 
+					 * Channel ch = connectToPublic(sa); ChannelQueue queue =
+					 * QueueFactory.getInstance(ch);
+					 * 
+					 * logger.info(
+					 * "****************Job Request being dispatched to leaders********"
+					 * );
+					 * 
+					 * queue.enqueueResponse(jobDispatched, ch); }
+					 */
 
 				} else {
+
+					Request.Builder rb = Request.newBuilder(jobOperation);
+					Header.Builder hbldr = rb.getHeaderBuilder();
+					hbldr.setToNode(toNodeId);
+					hbldr.setRoutingId(Header.Routing.JOBS);
+					rb.setHeader(hbldr.build());
+					Request jobDispatched = rb.build();
 
 					NodeDesc slaveNode = configFile.getNearest().getNode(
 							toNodeId);
@@ -254,7 +304,8 @@ public class JobManager {
 					Channel ch = connectToPublic(sa);
 
 					ChannelQueue queue = QueueFactory.getInstance(ch);
-					logger.info("****************Job Request being dispatched to slave node: ********"+toNodeId);
+					logger.info("****************Job Request being dispatched to slave node: ********"
+							+ toNodeId);
 					queue.enqueueResponse(jobDispatched, ch);
 
 				}
@@ -281,8 +332,6 @@ public class JobManager {
 
 			channelFuture = b.connect(sa);
 			channelFuture.awaitUninterruptibly(5000l);
-
-			
 
 		} catch (Exception ex) {
 			logger.debug("failed to initialize the election connection");
