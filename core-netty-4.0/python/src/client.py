@@ -51,16 +51,16 @@ def buildJob(name_space, jobAction, ownerId):
     msg = r.SerializeToString()
     return msg
 
-def buildSigninJob(name_space, jobAction, ownerId):
+def buildSignupJob(username, password,firstName, lastName, ownerId):
     
     jobId = str(int(round(time.time() * 1000)))
 
     r = comm_pb2.Request()    
 
     r.body.job_op.job_id = jobId
-    r.body.job_op.action = jobAction
+    r.body.job_op.action = comm_pb2.JobOperation.ADDJOB
     
-    r.body.job_op.data.name_space = name_space
+    r.body.job_op.data.name_space = "sign_up"
     r.body.job_op.data.owner_id = ownerId
     r.body.job_op.data.job_id = jobId
     r.body.job_op.data.status = comm_pb2.JobDesc.JOBQUEUED
@@ -72,24 +72,24 @@ def buildSigninJob(name_space, jobAction, ownerId):
     email = comm_pb2.NameValueSet()
     email.node_type = comm_pb2.NameValueSet.NODE
     email.name = "email"
-    email.value = "sinasad@gmail.com"
+    email.value = username
     
-    password = comm_pb2.NameValueSet()
-    password.node_type = comm_pb2.NameValueSet.NODE
-    password.name = "password"
-    password.value = "secret"
+    psw = comm_pb2.NameValueSet()
+    psw.node_type = comm_pb2.NameValueSet.NODE
+    psw.name = "password"
+    psw.value = password
     
     fName = comm_pb2.NameValueSet()
     fName.node_type = comm_pb2.NameValueSet.NODE
     fName.name = "firstName"
-    fName.value = "Sina"
+    fName.value = firstName
     
     lName = comm_pb2.NameValueSet()
     lName.node_type = comm_pb2.NameValueSet.NODE
     lName.name = "lastName"
-    lName.value = "Nikkhah"
+    lName.value = lastName
     
-    r.body.job_op.data.options.node.extend([email, password, fName, lName])
+    r.body.job_op.data.options.node.extend([email, psw, fName, lName])
     
     r.header.originator = "localhost:80"  
     r.header.routing_id = comm_pb2.Header.JOBS
@@ -98,16 +98,16 @@ def buildSigninJob(name_space, jobAction, ownerId):
     msg = r.SerializeToString()
     return msg
 
-def buildSignupJob(name_space, jobAction, ownerId):
+def buildSigninJob(username, password,ownerId):
     
     jobId = str(int(round(time.time() * 1000)))
 
     r = comm_pb2.Request()    
 
     r.body.job_op.job_id = jobId
-    r.body.job_op.action = jobAction
+    r.body.job_op.action = comm_pb2.JobOperation.ADDJOB
     
-    r.body.job_op.data.name_space = name_space
+    r.body.job_op.data.name_space = "sign_in"
     r.body.job_op.data.owner_id = ownerId
     r.body.job_op.data.job_id = jobId
     r.body.job_op.data.status = comm_pb2.JobDesc.JOBQUEUED
@@ -119,14 +119,14 @@ def buildSignupJob(name_space, jobAction, ownerId):
     email = comm_pb2.NameValueSet()
     email.node_type = comm_pb2.NameValueSet.NODE
     email.name = "email"
-    email.value = "sinasad@gmail.com"
+    email.value = username
     
-    password = comm_pb2.NameValueSet()
-    password.node_type = comm_pb2.NameValueSet.NODE
-    password.name = "password"
-    password.value = "secret"
+    psw = comm_pb2.NameValueSet()
+    psw.node_type = comm_pb2.NameValueSet.NODE
+    psw.name = "password"
+    psw.value = password
     
-    r.body.job_op.data.options.node.extend([email, password])
+    r.body.job_op.data.options.node.extend([email, psw])
     
     r.header.originator = "localhost:80"  
     r.header.routing_id = comm_pb2.Header.JOBS
@@ -135,23 +135,23 @@ def buildSignupJob(name_space, jobAction, ownerId):
     msg = r.SerializeToString()
     return msg
 
-def buildCourseDescJob(name_space, jobAction, ownerId):
+def buildCourseDescJob(courseName, ownerId):
     
     jobId = str(int(round(time.time() * 1000)))
 
     r = comm_pb2.Request()    
 
     r.body.job_op.job_id = jobId
-    r.body.job_op.action = jobAction
+    r.body.job_op.action = comm_pb2.JobOperation.ADDJOB
     
-    r.body.job_op.data.name_space = name_space
+    r.body.job_op.data.name_space = "getdescription"
     r.body.job_op.data.owner_id = ownerId
     r.body.job_op.data.job_id = jobId
     r.body.job_op.data.status = comm_pb2.JobDesc.JOBQUEUED
     
     r.body.job_op.data.options.node_type = comm_pb2.NameValueSet.VALUE
     r.body.job_op.data.options.name = "coursename"
-    r.body.job_op.data.options.value = "CMPE275"
+    r.body.job_op.data.options.value = courseName
     
     r.header.originator = "localhost:80"  
     r.header.routing_id = comm_pb2.Header.JOBS
@@ -172,16 +172,16 @@ def buildNS():
     m = r.SerializeToString()
     return m
     
-def buildListCourse(name_space, jobAction, ownerId):
+def buildListCourse(ownerId):
 
     jobId = str(int(round(time.time() * 1000)))
     
     r = comm_pb2.Request()
     
     r.body.job_op.job_id = jobId
-    r.body.job_op.action = jobAction
+    r.body.job_op.action = comm_pb2.JobOperation.ADDJOB
     
-    r.body.job_op.data.name_space = name_space
+    r.body.job_op.data.name_space = "listcourses"
     r.body.job_op.data.owner_id = ownerId
     r.body.job_op.data.job_id = jobId
     r.body.job_op.data.status = comm_pb2.JobDesc.JOBQUEUED
@@ -193,7 +193,7 @@ def buildListCourse(name_space, jobAction, ownerId):
     uId = comm_pb2.NameValueSet()
     uId.node_type = comm_pb2.NameValueSet.NODE
     uId.name = "uId"
-    uId.value = "123"
+    uId.value = "1"
       
     r.body.job_op.data.options.node.extend([uId])
     
@@ -204,14 +204,15 @@ def buildListCourse(name_space, jobAction, ownerId):
     msg = r.SerializeToString()
     return msg    
     
-def buildQuestionJob(name_space, jobAction, ownerId):
+def buildQuestionJob(myTitle, owner, myDescription, myPostdate, ownerId):
 
+    jobId = str(int(round(time.time() * 1000)))
     r = comm_pb2.Request()    
 
     r.body.job_op.job_id = jobId
-    r.body.job_op.action = jobAction
+    r.body.job_op.action = comm_pb2.JobOperation.ADDJOB
     
-    r.body.job_op.data.name_space = name_space
+    r.body.job_op.data.name_space = "questionadd"
     r.body.job_op.data.owner_id = ownerId
     r.body.job_op.data.job_id = jobId
     r.body.job_op.data.status = comm_pb2.JobDesc.JOBQUEUED
@@ -223,24 +224,24 @@ def buildQuestionJob(name_space, jobAction, ownerId):
     title = comm_pb2.NameValueSet()
     title.node_type = comm_pb2.NameValueSet.NODE
     title.name = "title"
-    title.value = "core-netty"
+    title.value = myTitle
     
-    owner = comm_pb2.NameValueSet()
-    owner.node_type = comm_pb2.NameValueSet.NODE
-    owner.name = "owner"
-    password.value = "123"
+    me = comm_pb2.NameValueSet()
+    me.node_type = comm_pb2.NameValueSet.NODE
+    me.name = "owner"
+    me.value = owner
     
     description = comm_pb2.NameValueSet()
     description.node_type = comm_pb2.NameValueSet.NODE
     description.name = " description"
-    description.value = "What is core netty"
+    description.value = myDescription
     
     postdate = comm_pb2.NameValueSet()
     postdate.node_type = comm_pb2.NameValueSet.NODE
     postdate.name = "postdate"
-    postdate.value = "04/07/2014"
+    postdate.value = myPostdate
     
-    r.body.job_op.data.options.node.extend([title, owner, description, postdate])        
+    r.body.job_op.data.options.node.extend([title, me, description, postdate])        
     r.header.originator = "localhost:80"  
     r.header.routing_id = comm_pb2.Header.JOBS
     r.header.toNode = str(0)
@@ -255,7 +256,7 @@ def buildCompetitionJob(name_space, jobAction, ownerId):
     r = comm_pb2.Request()    
 
     r.body.job_op.job_id = jobId
-    r.body.job_op.action = jobAction
+    r.body.job_op.action = comm_pb2.JobOperation.ADDJOB
     
     r.body.job_op.data.name_space = name_space
     r.body.job_op.data.owner_id = ownerId
@@ -274,8 +275,6 @@ def buildCompetitionJob(name_space, jobAction, ownerId):
 def sendMsg(msg_out, port):
     s = socket.socket()         
     host = socket.gethostname()
-   
-                  
 
     s.connect((host, port))        
     msg_len = struct.pack('>L', len(msg_out))    
@@ -284,17 +283,14 @@ def sendMsg(msg_out, port):
     msg_in_len = struct.unpack('>L', len_buf)[0]
     msg_in = receiveMsg(s, msg_in_len)
     
-    
     r = comm_pb2.Request()
     r.ParseFromString(msg_in)
 #    print msg_in
-    print r.body.job_status 
-    print r.header.reply_msg
-    print r.body.job_op.data.options
-    
-
+#    print r.body.job_status 
+#    print r.header.reply_msg
+#    print r.body.job_op.data.options
     s.close
-    
+    return r
 def receiveMsg(socket, n):
     buf = ''
     while n > 0:        
@@ -322,19 +318,55 @@ if __name__ == '__main__':
     # msg = buildPing(1, 2)
     # UDP_PORT = 8080
     # serverPort = getBroadcastMsg(UDP_PORT)   
-    
-    # name_space = "sign_up"
-    # ownerId = 123
-#    signinReq = buildSigninJob(name_space, comm_pb2.JobOperation.ADDJOB, ownerId)    
-#   signinReq = buildSignupJob("sign_in", comm_pb2.JobOperation.ADDJOB, ownerId)
-    # signinReq = buildCourseDescJob("getdescription", comm_pb2.JobOperation.ADDJOB, ownerId)
-    # sendMsg(signinReq, 5573)   
-    
-    
-    name_space = "competition"
-    ownerId = 123;
-    listcourseReq = buildListCourse(name_space, comm_pb2.JobOperation.ADDJOB, ownerId)
-    sendMsg(listcourseReq, 5573)
+        
+    input = raw_input("Welcome to our MOOC client! Kindly select your desirable action:\n1.Sign up\n2.Sign in\n")
+    if input == "1":
+        username = raw_input("email:")
+        password = raw_input("Password:")
+        fName = raw_input("First Name:")
+        lName = raw_input("Last Name:")
+        signupJob = buildSignupJob(username, password,fName, lName, 123) 
+        result = sendMsg(signupJob, 5573)
+        print result.body.job_status 
+        print result.header.reply_msg
+        
+    elif input == "2":        
+        print("Please enter your Username and Password") 
+        login = False
+        while login==False:
+            username = raw_input("Username:")
+            password = raw_input("Password:")
+            signinJob = buildSigninJob(username, password, 123)
+            result = sendMsg(signinJob, 5573)
+            if result.body.job_status.status == 2:
+                login = True
+    while True:
+        input = raw_input("\nPlease select your desirable action:\n0.Quit\n1.Get a course description\n2. List all courses being offered\n")
+        if input == "1":
+            courseName = raw_input("Course Name:")
+            courseDescJob = buildCourseDescJob(courseName, 123)
+            result = sendMsg(courseDescJob, 5573)
+            if result.body.job_status.status == 2:
+                print result.body.job_status.data[0].options.value
+            else:
+    #            print result.body.job_status 
+                print result.header.reply_msg
+        if input == "2":
+            listCoursesJob = buildListCourse(123)
+            result = sendMsg(listCoursesJob, 5573)
+            print result.body.job_status.data[0].options
+        if input == "3":
+            questionJob = buildQuestionJob("core-netty", "1", "What is core netty", "04/07/2014", 123)
+            result = sendMsg(questionJob, 5573)
+            print result.body.job_status
+            
+        if input == "0":
+            print("Thanks for using our MOOC! See you soon ...")
+            break
+#    name_space = "competition"
+#    ownerId = 123;
+#    listcourseReq = buildListCourse(name_space, comm_pb2.JobOperation.ADDJOB, ownerId)
+#    sendMsg(listcourseReq, 5573)
 
     # name_space = "questionadd"
     # ownerId = 123;

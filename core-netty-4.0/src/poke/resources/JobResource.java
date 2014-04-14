@@ -405,7 +405,7 @@ public class JobResource implements Resource {
 							nv.setNodeType(NameValueSet.NodeType.VALUE);
 							nv.setName("coursedescription");
 
-							String desc = null;
+							String desc = "";
 							String message = "Course Description Attached";
 							if (result == null) {
 								message = "Course Not Found";
@@ -444,7 +444,7 @@ public class JobResource implements Resource {
 								credentials.put(nvPair.getName(),
 										nvPair.getValue());
 								filters.put(nvPair.getName(), nvPair.getValue());
-								if (nvPair.getName().equals("uid"))
+								if (nvPair.getName().equals("uId"))
 									uId = nvPair.getValue();
 								logger.info("/n*****uId*************" + uId);
 								iuId = Integer.parseInt("1");
@@ -497,12 +497,11 @@ public class JobResource implements Resource {
 							jb.setStatus(PokeStatus.SUCCESS);
 							jb.setJobId(jobOp.getJobId());
 							jb.setJobState(JobDesc.JobCode.JOBRECEIVED);
-							pb.setJobStatus(jb.build());
 
-							JobOperation.Builder jo = JobOperation.newBuilder();
+/*							JobOperation.Builder jo = JobOperation.newBuilder();
 							jo.setAction(JobAction.ADDJOB);
 							jo.setJobId(jobOp.getJobId());
-
+*/
 							JobDesc.Builder jDescBuilder = JobDesc.newBuilder();
 							jDescBuilder.setJobId(jobOp.getJobId());
 							jDescBuilder.setNameSpace(listCourses);
@@ -510,15 +509,11 @@ public class JobResource implements Resource {
 									.getOwnerId());
 							jDescBuilder.setStatus(JobCode.JOBRECEIVED);
 
-							jDescBuilder.setOptions(courses);
+							jDescBuilder.setOptions(courses.build());
 							// set courseList using jDescBuilder.setOptions()
-
-							jo.setData(jDescBuilder.build());
-
-							pb.setJobOp(jo.build());
-
+							jb.addData(jDescBuilder.build());
+							pb.setJobStatus(jb.build());
 							rb.setBody(pb.build());
-
 							reply = rb.build();
 						}
 
