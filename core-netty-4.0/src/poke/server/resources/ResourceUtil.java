@@ -106,7 +106,7 @@ public class ResourceUtil {
 		Header hdr = buildHeaderFrom(reqHeader, status, statusMsg);		
 		bldr.setHeader(hdr);
 
-		// TODO add logging
+		
 
 		return bldr.build();
 	}

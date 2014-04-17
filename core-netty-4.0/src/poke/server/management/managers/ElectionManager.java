@@ -45,7 +45,7 @@ import eye.Comm.Management;
  * @author gash
  * 
  */
-public class ElectionManager /* extends Thread */{
+public class ElectionManager {
 	protected static Logger logger = LoggerFactory.getLogger("management");
 	protected static AtomicReference<ElectionManager> instance = new AtomicReference<ElectionManager>();
 	private static ConcurrentLinkedQueue<LeaderElectionData> neighbours = new ConcurrentLinkedQueue<LeaderElectionData>();
@@ -195,8 +195,6 @@ public class ElectionManager /* extends Thread */{
 			channelFuture = b.connect(destination);
 			channelFuture.awaitUninterruptibly(5000l);
 
-			logger.info("connect successful");
-
 		} catch (Exception ex) {
 			logger.debug("failed to initialize the election connection" + host);
 
@@ -229,76 +227,72 @@ public class ElectionManager /* extends Thread */{
 	private void send(Management msg) {
 		int myId = Integer.parseInt(nodeId);
 		Channel channel;
+		try {
 
-		switch (msgType) {
-		case 1:
-			participant = true;
-			for (LeaderElectionData ld : neighbours) {
-				int neighbourId = Integer.parseInt(ld.getNodeId());
-				logger.info("my Id---" + myId + "neighbour" + neighbourId);
-				if (neighbourId > myId && (ld.getActive() == 1)) {
-					electionMsgSend = true;
-					try {
+			switch (msgType) {
+			case 1:
+				participant = true;
+				for (LeaderElectionData ld : neighbours) {
+					int neighbourId = Integer.parseInt(ld.getNodeId());
+					logger.info("my Id---" + myId + "neighbour" + neighbourId);
+					if (neighbourId > myId && (ld.getActive() == 1)) {
+						electionMsgSend = true;
 						channel = connect(ld.getHost(), ld.getPort());
 						channel.writeAndFlush(msg);
-
 						participant = true;
 						logger.info("Election message (" + nodeId
 								+ ") sent to " + ld.getNodeId() + " at "
 								+ ld.getPort());
-					} catch (Exception e) {
-						logger.info("Election message sending failed! ("
-								+ nodeId + ") to " + ld.getNodeId() + " at "
-								+ ld.getPort());
-						electionMsgSend = false;
-						logger.error("Failed to send leader election message");
-					}
 
+					}
 				}
-			}
-			break;
-		case 2:
-			for (LeaderElectionData ld : neighbours) {
-				if (senderId.equals(ld.getNodeId())) {
-					try {
+				break;
+			case 2:
+				for (LeaderElectionData ld : neighbours) {
+					if (senderId.equals(ld.getNodeId())) {
 						channel = connect(ld.getHost(), ld.getPort());
 						channel.writeAndFlush(msg);
 						logger.info("message" + nodeId + " sent to "
 								+ ld.getHost() + " at " + ld.getPort() + ""
 								+ ld.getNodeId());
-					} catch (Exception e) {
-						if (msgType == 2) {
-							logger.error("Failed to send ok message");
-						} else {
-							logger.error("Failed to send co-ordinator message");
-						}
+
 					}
-
 				}
-			}
-			participant = true;
-			break;
+				participant = true;
+				break;
 
-		case 3:// co-rrdinator msg send to all lower ids
-			for (LeaderElectionData ld : neighbours) {
-				int neighbourId = Integer.parseInt(ld.getNodeId());
+			case 3:// co-rrdinator msg send to all lower ids
+				for (LeaderElectionData ld : neighbours) {
+					int neighbourId = Integer.parseInt(ld.getNodeId());
 
-				if (neighbourId < myId && (ld.getActive() == 1)) {
+					if (neighbourId < myId && (ld.getActive() == 1)) {
 
-					channel = connect(ld.getHost(), ld.getPort());
-					channel.writeAndFlush(msg);
-					participant = true;
-					logger.info("Co-ordinator message (" + nodeId
-							+ ") sent to " + ld.getHost() + " at "
-							+ ld.getPort());
+						channel = connect(ld.getHost(), ld.getPort());
+						channel.writeAndFlush(msg);
+						participant = true;
+						logger.info("Co-ordinator message (" + nodeId
+								+ ") sent to " + ld.getHost() + " at "
+								+ ld.getPort());
 
+					}
 				}
+
+				break;
+			default:
+				logger.info("unknown message type");
+				break;
 			}
 
-			break;
-		default:
-			logger.info("unknown message type");
-			break;
+		} catch (Exception e) {
+			e.printStackTrace();
+			if (msgType == 1) {
+				electionMsgSend = false;
+				logger.error("Failed to send leader election message");
+			} else if (msgType == 2) {
+				logger.error("Failed to send ok message");
+			} else {
+				logger.error("Failed to send co-ordinator message");
+			}
 		}
 
 	}
@@ -341,15 +335,6 @@ public class ElectionManager /* extends Thread */{
 			return leader;
 		else
 			return null;
-
-	}
-
-	// Shaji: ElectionManager now extends Thread. Overiding run() method of
-	// thread
-	// @Override
-	public void run() {
-
-		// to be used later
 
 	}
 
@@ -425,7 +410,7 @@ public class ElectionManager /* extends Thread */{
 
 		if (leader != null) {
 			if (leader.equals(nodeId)) {
-				logger.info("I am the leader" + leader);
+				logger.info("I am the leader " + leader);
 				broadcast = new BroadcastLeader(myPublicPort);
 				broadcast.start();
 			} else if (broadcast != null) {

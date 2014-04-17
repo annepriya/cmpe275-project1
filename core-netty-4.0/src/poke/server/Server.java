@@ -74,7 +74,6 @@ public class Server {
 	protected static ElectionManager electionMgr;
 	protected static ChannelFuture mgmtChannelF;
 	private static String myId;
-	
 
 	/**
 	 * static because we need to get a handle to the factory from the shutdown
@@ -82,7 +81,7 @@ public class Server {
 	 */
 	public static void shutdown() {
 		try {
-			if (allChannels != null) { 
+			if (allChannels != null) {
 				ChannelGroupFuture grp = allChannels.close();
 				grp.awaitUninterruptibly(5, TimeUnit.SECONDS);
 			}
@@ -142,9 +141,7 @@ public class Server {
 			try {
 				String str = conf.getServer().getProperty("port");
 				if (str == null) {
-					// TODO if multiple servers can be ran per node, assigning a
-					// default
-					// is not a good idea
+
 					logger.warn("Using default port 5570, configuration contains no port number");
 					str = "5570";
 				}
@@ -165,12 +162,11 @@ public class Server {
 				b.childHandler(new ServerInitializer(compressComm));
 
 				// Start the server.
-				logger.info("Starting server " + conf.getServer().getProperty("node.id") + ", listening on port = "
-						+ port);
+				logger.info("Starting server "
+						+ conf.getServer().getProperty("node.id")
+						+ ", listening on port = " + port);
 				ChannelFuture f = b.bind(port).syncUninterruptibly();
 
-				// should use a future channel listener to do this step
-				
 				// allChannels.add(f.channel());
 
 				// block until the server socket is closed.
@@ -214,8 +210,8 @@ public class Server {
 			try {
 				String str = conf.getServer().getProperty("port.mgmt");
 				int mport = Integer.parseInt(str);
-				String portString=conf.getServer().getProperty("port");
-				int port=Integer.parseInt(portString);
+				String portString = conf.getServer().getProperty("port");
+				int port = Integer.parseInt(portString);
 
 				ServerBootstrap b = new ServerBootstrap();
 				bootstrap.put(mport, b);
@@ -232,14 +228,13 @@ public class Server {
 
 				// Start the server.
 
-				logger.info("Starting mgmt " + conf.getServer().getProperty("node.id") + ", listening on port = "
-						+ mport);
+				logger.info("Starting mgmt "
+						+ conf.getServer().getProperty("node.id")
+						+ ", listening on port = " + mport);
 				ChannelFuture f = b.bind(mport).syncUninterruptibly();
 				logger.info("remote address " + f.channel().remoteAddress());
 				electionMgr.setMyPublicPort(port);
 				electionMgr.initiateElection();
-				
-			
 
 				// block until the server socket is closed.
 				f.channel().closeFuture().sync();
@@ -280,21 +275,21 @@ public class Server {
 		electionMgr = ElectionManager.getInstance(myId, votes);
 
 		// create manager for accepting jobs
-		jobMgr = JobManager.getInstance(myId,conf);
+		jobMgr = JobManager.getInstance(myId, conf);
 
 		// establish nearest nodes and start receiving heartbeats
 		heartbeatMgr = HeartbeatManager.getInstance(myId);
 		for (NodeDesc nn : conf.getNearest().getNearestNodes().values()) {
-			HeartbeatData node = new HeartbeatData(nn.getNodeId(), nn.getHost(), nn.getPort(), nn.getMgmtPort());
+			HeartbeatData node = new HeartbeatData(nn.getNodeId(),
+					nn.getHost(), nn.getPort(), nn.getMgmtPort());
 			HeartbeatConnector.getInstance().addConnectToThisNode(node);
-			
-			//Shaji: TODO correct this code. Only last entry set
-			//Anne added status to addConnectToThisNode method initially set to active
-			ElectionManager.getInstance().addConnectToThisNode(nn.getNodeId(), nn.getHost(), nn.getMgmtPort(),1);			
+
+			ElectionManager.getInstance().addConnectToThisNode(nn.getNodeId(),
+					nn.getHost(), nn.getMgmtPort(), 1);
 
 		}
-		
-		heartbeatMgr.start();	
+
+		heartbeatMgr.start();
 
 		// manage heartbeatMgr connections
 		HeartbeatConnector conn = HeartbeatConnector.getInstance();
@@ -316,28 +311,23 @@ public class Server {
 		String myId = conf.getServer().getProperty("node.id");
 		logger.info("Initializing server " + myId);
 
-		// storage initialization
-		// TODO storage setup (e.g., connection to a database)
-
 		startManagers();
-		
+
 		StartManagement mgt = new StartManagement(conf);
 		Thread mthread = new Thread(mgt);
 		mthread.start();
 
 		StartCommunication comm = new StartCommunication(conf);
 		logger.info("Server " + myId + " ready");
-		
+
 		String str = conf.getServer().getProperty("port.mgmt");
-		int mport = Integer.parseInt(str);	
-		
-		
+		int mport = Integer.parseInt(str);
+
 		Thread cthread = new Thread(comm);
 		cthread.start();
-		
-		
-		
+
 	}
+
 	public static String getMyId() {
 		return myId;
 	}
@@ -351,7 +341,8 @@ public class Server {
 	 */
 	public static void main(String[] args) {
 		if (args.length != 1) {
-			System.err.println("Usage: java " + Server.class.getClass().getName() + " conf-file");
+			System.err.println("Usage: java "
+					+ Server.class.getClass().getName() + " conf-file");
 			System.exit(1);
 		}
 

@@ -23,16 +23,13 @@ public class LeaderElectionData {
 	private String nodeId;
 	private String host;
 	private int port;
-	public  int active;
-	
-	
+	public int active;
 
 	public LeaderElectionData(String nodeId, String host, int port) {
 		this.nodeId = nodeId;
 		this.host = host;
 		this.port = port;
-		
-		
+
 	}
 
 	/**
@@ -73,14 +70,13 @@ public class LeaderElectionData {
 	public void setPort(int port) {
 		this.port = port;
 	}
-	
-	public  int getActive() {
+
+	public int getActive() {
 		return active;
 	}
 
-	public   void setActive(int active) {
+	public void setActive(int active) {
 		this.active = active;
 	}
-	
 
 }

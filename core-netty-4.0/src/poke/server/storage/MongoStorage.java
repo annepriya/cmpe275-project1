@@ -93,7 +93,7 @@ public class MongoStorage {
 	
 		addQuestion("add&drop", 1,  "when is the last day for add/drop", "3/27/2014");
 		addQuestion("Add Code", 2,  "How can I get an add code?", "3/27/2014");
-		addAnswer(2, 1, "April 4th");
+		addAnswer(2, 1, "Last date is April 4th");
 		addAnswer( 1, 2, "Fill in the add code form.");
 		addAnswer(2, 1, "Beg the professor");
 //		deleteAnswer(3);
@@ -133,6 +133,10 @@ public class MongoStorage {
 		BasicDBObject query = new BasicDBObject("email", email);
 		return (BasicDBObject) collUsers.findOne(query);
 	}
+	public static Integer getUserID(String email){
+		BasicDBObject query = new BasicDBObject("email", email);
+		return ((BasicDBObject)collUsers.findOne(query)).getInt("uId");
+	}
 	public static void deleteUser(String email){
 		BasicDBObject user = new BasicDBObject("email", email);
 		collUsers.remove(user);
@@ -171,6 +175,9 @@ public class MongoStorage {
 	public static List<DBObject> getCoursesByuId(int uId){
 		BasicDBObject query = new BasicDBObject("members", uId);
 		return collCoureses.find(query).toArray();
+	}
+	public static List<DBObject> getAllCourses(){
+		return collCoureses.find().toArray();
 	}
 	public static void deleteCourse(int cId){
 		BasicDBObject course = new BasicDBObject("cId", cId);
@@ -245,6 +252,9 @@ public class MongoStorage {
 		BasicDBObject query = new BasicDBObject("owner", uId);
 		return collQuestions.find(query).toArray();
 	}
+	public static List<DBObject> getAllQuestions(){
+		return collQuestions.find().toArray();
+	}
 	//Fix this
 	public static void deleteQuestion(int qId){
 		BasicDBObject question = new BasicDBObject("qId", qId);
@@ -291,6 +301,9 @@ public class MongoStorage {
 	public static BasicDBObject getAnswer(int aId){
 		BasicDBObject query = new BasicDBObject("aId", aId);
 		return (BasicDBObject) collAnswers.findOne(query);
+	}
+	public static List<DBObject> getAllAnswer(){
+		return collAnswers.find().toArray();
 	}
 	public static List<DBObject> getAnswersByqId(int qId){
 		BasicDBObject query = new BasicDBObject("qId", qId);

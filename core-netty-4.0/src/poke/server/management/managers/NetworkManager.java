@@ -87,7 +87,6 @@ public class NetworkManager {
 					HeartbeatManager.getInstance().addOutgoingChannel(
 							req.getNodeId(), isa.getHostName(), isa.getPort(),
 							channel, sa);
-					// ElectionManager.getInstance().start();
 
 				}
 			} else

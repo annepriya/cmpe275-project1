@@ -68,6 +68,9 @@ public class JobResource implements Resource {
 	private static final String listCourses = "listcourses";
 	private static final String getDescription = "getdescription";
 	private static final String addQuestion = "questionadd";
+	private static final String showQuestion = "questionshow";
+	private static final String addAnswer = "answeradd";
+	private static final String showAnswer = "answershow";
 	private static final String getMoreCourses = "getmorecourses";
 	private static final String competition = "competition";
 	private static Map<String, Request> requestMap = new HashMap<String, Request>();
@@ -205,12 +208,15 @@ public class JobResource implements Resource {
 				if (jobOp.getData().getNameSpace().equals(getMoreCourses)
 						|| jobOp.getData().getNameSpace().equals(competition)) {
 
-					List<String> leaderList = new ArrayList<String>();
-					leaderList.add(new String("192.168.0.235:5673"));
-					leaderList.add(new String("192.168.0.236:5673"));
-					leaderList.add(new String("192.168.0.241:5573"));
+					// This arraylist contains IP addresses of all leaders of
+					// other clusters
 
-					//
+					List<String> leaderList = new ArrayList<String>();
+
+					// leaderList.add(new String("192.168.0.61:5670"));
+					// leaderList.add(new String("192.168.0.60:5673"));
+					// leaderList.add(new String("192.168.0.230:5573"));
+
 					for (String destination : leaderList) {
 						String[] dest = destination.split(":");
 						destHost = dest[0];
@@ -235,16 +241,9 @@ public class JobResource implements Resource {
 						InetSocketAddress sa = new InetSocketAddress(destHost,
 								destPort);
 
-						try {
-							Channel ch = connectToManagement(sa);
-							ch.writeAndFlush(jobProposal);
-							logger.info("\n**********Job proposal sent\n\n**********");
-						} catch (Exception e) {
-							logger.info("Exception received while sending job proposal connecting to node: "
-									+ destHost + ":" + destPort);
-						}
-
-						// ManagementQueue.enqueueResponse(jobProposal,ch);
+						Channel ch = connectToManagement(sa);
+						ch.writeAndFlush(jobProposal);
+						logger.info("\n**********Job proposal sent\n\n**********");
 
 					}
 
@@ -297,7 +296,6 @@ public class JobResource implements Resource {
 						}
 						MongoStorage.addUser(email, password, firstName,
 								lastName);
-
 						logger.info("credentials: " + credentials.toString());
 
 						// reply success
@@ -315,6 +313,12 @@ public class JobResource implements Resource {
 						jb.setStatus(PokeStatus.SUCCESS);
 						jb.setJobId(jobOp.getJobId());
 						jb.setJobState(JobDesc.JobCode.JOBRECEIVED);
+						JobDesc.Builder jd = JobDesc.newBuilder();
+						jd.setNameSpace("result");
+						jd.setOwnerId(MongoStorage.getUserID(email));
+						jd.setJobId(jobOp.getJobId());
+						jd.setStatus(JobDesc.JobCode.JOBRECEIVED);
+						jb.addData(jd.build());
 						pb.setJobStatus(jb.build());
 
 						rb.setBody(pb.build());
@@ -355,12 +359,20 @@ public class JobResource implements Resource {
 							jb.setStatus(PokeStatus.SUCCESS);
 							jb.setJobId(jobOp.getJobId());
 							jb.setJobState(JobDesc.JobCode.JOBRECEIVED);
-
+							int owner = 666;
 							String message = "Login Successful";
 							if (!MongoStorage.validateUser(email, password)) {
 								message = "Login Failed";
 								jb.setStatus(PokeStatus.FAILURE);
+							} else {
+								owner = MongoStorage.getUserID(email);
 							}
+							JobDesc.Builder jd = JobDesc.newBuilder();
+							jd.setNameSpace("result");
+							jd.setOwnerId(owner);
+							jd.setJobId(jobOp.getJobId());
+							jd.setStatus(JobDesc.JobCode.JOBRECEIVED);
+							jb.addData(jd.build());
 							pb.setJobStatus(jb.build());
 							rb.setBody(pb.build());
 							rb.setHeader(ResourceUtil.buildHeader(request
@@ -431,57 +443,30 @@ public class JobResource implements Resource {
 									.getNameSpace())) {
 						// list all courses
 
-						HashMap<String, String> credentials = new HashMap<String, String>();
-						List<NameValueSet> courseList = new ArrayList<NameValueSet>();
-						int iuId = 0;
 						if (jobOp.getData().getOptions() != null) {
-							List<NameValueSet> nvList = jobOp.getData()
-									.getOptions().getNodeList();
-
-							HashMap<String, String> filters = new HashMap<String, String>();
-							String uId = null;
-							for (NameValueSet nvPair : nvList) {
-								credentials.put(nvPair.getName(),
-										nvPair.getValue());
-								filters.put(nvPair.getName(), nvPair.getValue());
-								if (nvPair.getName().equals("uId"))
-									uId = nvPair.getValue();
-								logger.info("/n*****uId*************" + uId);
-								iuId = Integer.parseInt("1");
-
-							}
-
-							List<String> list = new ArrayList<String>();
 							List<DBObject> dbObj = new ArrayList<DBObject>();
 							// TODO this method has to be changed
-							dbObj = MongoStorage.getCoursesByuId(iuId);
-
-							for (int i = 0; i < dbObj.size(); i++) {
-								BasicDBObject result2 = (BasicDBObject) dbObj
-										.get(i);
-								list.add(result2.getString("name"));
-
-							}
+							dbObj = MongoStorage.getAllCourses();
+							String val = "";
 							NameValueSet.Builder courses = NameValueSet
 									.newBuilder();
 							courses.setNodeType(NameValueSet.NodeType.VALUE);
 							courses.setName(listCourses);
 							courses.setValue("attached");
-							for (int i = 0; i < list.size(); i++) {
-
-								logger.info("this is Courses" + list.get(i));
-								NameValueSet.Builder cb = NameValueSet
-										.newBuilder();
-								cb.setNodeType(NameValueSet.NodeType.NODE);
-								cb.setName(listCourses);
-								cb.setValue(list.get(i));
-								// cb.build();
-								courses.addNode(cb.build());
-								// courseList.add(cb.build());
-
+							for (int i = 0; i < dbObj.size(); i++) {
+								BasicDBObject result2 = (BasicDBObject) dbObj
+										.get(i);
+								val = result2.getString("name");
+								if (val != null) {
+									logger.info("this is Courses" + val);
+									NameValueSet.Builder cb = NameValueSet
+											.newBuilder();
+									cb.setNodeType(NameValueSet.NodeType.NODE);
+									cb.setName("" + result2.getString("cId"));
+									cb.setValue(val);
+									courses.addNode(cb.build());
+								}
 							}
-							// list of courses should be a list of NameValueSet
-
 							// reply success
 							Request.Builder rb = Request.newBuilder();
 							// metadata
@@ -497,20 +482,13 @@ public class JobResource implements Resource {
 							jb.setStatus(PokeStatus.SUCCESS);
 							jb.setJobId(jobOp.getJobId());
 							jb.setJobState(JobDesc.JobCode.JOBRECEIVED);
-
-/*							JobOperation.Builder jo = JobOperation.newBuilder();
-							jo.setAction(JobAction.ADDJOB);
-							jo.setJobId(jobOp.getJobId());
-*/
 							JobDesc.Builder jDescBuilder = JobDesc.newBuilder();
 							jDescBuilder.setJobId(jobOp.getJobId());
 							jDescBuilder.setNameSpace(listCourses);
 							jDescBuilder.setOwnerId(jobOp.getData()
 									.getOwnerId());
 							jDescBuilder.setStatus(JobCode.JOBRECEIVED);
-
 							jDescBuilder.setOptions(courses.build());
-							// set courseList using jDescBuilder.setOptions()
 							jb.addData(jDescBuilder.build());
 							pb.setJobStatus(jb.build());
 							rb.setBody(pb.build());
@@ -567,8 +545,8 @@ public class JobResource implements Resource {
 								if (nvPair.getName().equals("title"))
 									title = nvPair.getValue();
 								if (nvPair.getName().equals("owner"))
-									owner = nvPair.getValue();
-								iowner = Integer.parseInt(owner);
+									iowner = Integer
+											.parseInt(nvPair.getValue());
 								if (nvPair.getName().equals("description"))
 									description = nvPair.getValue();
 								if (nvPair.getName().equals("postdate"))
@@ -599,7 +577,180 @@ public class JobResource implements Resource {
 							reply = rb.build();
 
 						}
+					} else if (showQuestion.equals(jobOp.getData()
+							.getNameSpace())) {
 
+						if (jobOp.getData().getOptions() != null) {
+							List<String> list = new ArrayList<String>();
+							List<DBObject> dbObj = new ArrayList<DBObject>();
+
+							dbObj = MongoStorage.getAllQuestions();
+							NameValueSet.Builder questions = NameValueSet
+									.newBuilder();
+							questions.setNodeType(NameValueSet.NodeType.VALUE);
+							questions.setName(showQuestion);
+							questions.setValue("attached");
+							String val = "";
+							for (int i = 0; i < dbObj.size(); i++) {
+								BasicDBObject result2 = (BasicDBObject) dbObj
+										.get(i);
+								val = result2.getString("description");
+								if (val != null) {
+									NameValueSet.Builder cb = NameValueSet
+											.newBuilder();
+									cb.setNodeType(NameValueSet.NodeType.NODE);
+									cb.setName("" + result2.getString("qId"));
+									cb.setValue(val);
+									questions.addNode(cb.build());
+								}
+
+							}
+
+							for (int i = 0; i < list.size(); i++) {
+
+								logger.info("Question" + list.get(i));
+								NameValueSet.Builder cb = NameValueSet
+										.newBuilder();
+								cb.setNodeType(NameValueSet.NodeType.NODE);
+								cb.setName("Question");
+								cb.setValue(list.get(i));
+								// cb.build();
+								questions.addNode(cb.build());
+							}
+
+							// reply success
+							Request.Builder rb = Request.newBuilder();
+							// metadata
+							rb.setHeader(ResourceUtil.buildHeader(request
+									.getHeader().getRoutingId(),
+									PokeStatus.SUCCESS, "Questions Retrieved",
+									request.getHeader().getOriginator(),
+									request.getHeader().getTag(), leaderId));
+
+							// payload
+							Payload.Builder pb = Payload.newBuilder();
+							JobStatus.Builder jb = JobStatus.newBuilder();
+							jb.setStatus(PokeStatus.SUCCESS);
+							jb.setJobId(jobOp.getJobId());
+							jb.setJobState(JobDesc.JobCode.JOBRECEIVED);
+							JobDesc.Builder jDescBuilder = JobDesc.newBuilder();
+							jDescBuilder.setJobId(jobOp.getJobId());
+							jDescBuilder.setNameSpace(listCourses);
+							jDescBuilder.setOwnerId(jobOp.getData()
+									.getOwnerId());
+							jDescBuilder.setStatus(JobCode.JOBRECEIVED);
+
+							jDescBuilder.setOptions(questions.build());
+							// set courseList using jDescBuilder.setOptions()
+							jb.addData(jDescBuilder.build());
+							pb.setJobStatus(jb.build());
+							rb.setBody(pb.build());
+							reply = rb.build();
+						}
+					} else if (addAnswer.equals(jobOp.getData().getNameSpace())) {
+
+						if (jobOp.getData().getOptions() != null) {
+							List<NameValueSet> nvList = jobOp.getData()
+									.getOptions().getNodeList();
+
+							HashMap<String, String> credentials = new HashMap<String, String>();
+							for (NameValueSet nvPair : nvList) {
+								credentials.put(nvPair.getName(),
+										nvPair.getValue());
+							}
+							logger.info("#######Credentials: "
+									+ credentials.toString() + "#######");
+							String description = null;
+							int uId, qId;
+							uId = qId = 0;
+							for (NameValueSet nvPair : nvList) {
+								credentials.put(nvPair.getName(),
+										nvPair.getValue());
+								if (nvPair.getName().equals("uId"))
+									uId = Integer.parseInt(nvPair.getValue());
+								if (nvPair.getName().equals("qId"))
+									qId = Integer.parseInt(nvPair.getValue());
+								if (nvPair.getName().equals("description"))
+									description = nvPair.getValue();
+							}
+							MongoStorage.addAnswer(uId, qId, description);
+
+							// reply success
+							Request.Builder rb = Request.newBuilder();
+							// metadata
+							rb.setHeader(ResourceUtil.buildHeader(request
+									.getHeader().getRoutingId(),
+									PokeStatus.SUCCESS, "Answer added", request
+											.getHeader().getOriginator(),
+									request.getHeader().getTag(), leaderId));
+
+							// payload
+							Payload.Builder pb = Payload.newBuilder();
+							JobStatus.Builder jb = JobStatus.newBuilder();
+							jb.setStatus(PokeStatus.SUCCESS);
+							jb.setJobId(jobOp.getJobId());
+							jb.setJobState(JobDesc.JobCode.JOBRECEIVED);
+							pb.setJobStatus(jb.build());
+
+							rb.setBody(pb.build());
+
+							reply = rb.build();
+
+						}
+					} else if (showAnswer
+							.equals(jobOp.getData().getNameSpace())) {
+
+						if (jobOp.getData().getOptions() != null) {
+							List<DBObject> dbObj = new ArrayList<DBObject>();
+
+							dbObj = MongoStorage.getAllAnswer();
+							String val = "";
+							NameValueSet.Builder questions = NameValueSet
+									.newBuilder();
+							questions.setNodeType(NameValueSet.NodeType.VALUE);
+							questions.setName(showAnswer);
+							questions.setValue("attached");
+							for (int i = 0; i < dbObj.size(); i++) {
+								BasicDBObject result2 = (BasicDBObject) dbObj
+										.get(i);
+								val = result2.getString("description");
+								if (val != null) {
+									NameValueSet.Builder cb = NameValueSet
+											.newBuilder();
+									cb.setNodeType(NameValueSet.NodeType.NODE);
+									cb.setName("" + result2.getString("qId"));
+									cb.setValue(val);
+									questions.addNode(cb.build());
+								}
+							}
+							// reply success
+							Request.Builder rb = Request.newBuilder();
+							// metadata
+							rb.setHeader(ResourceUtil.buildHeader(request
+									.getHeader().getRoutingId(),
+									PokeStatus.SUCCESS, "Answers Retrieved",
+									request.getHeader().getOriginator(),
+									request.getHeader().getTag(), leaderId));
+
+							// payload
+							Payload.Builder pb = Payload.newBuilder();
+							JobStatus.Builder jb = JobStatus.newBuilder();
+							jb.setStatus(PokeStatus.SUCCESS);
+							jb.setJobId(jobOp.getJobId());
+							jb.setJobState(JobDesc.JobCode.JOBRECEIVED);
+							JobDesc.Builder jDescBuilder = JobDesc.newBuilder();
+							jDescBuilder.setJobId(jobOp.getJobId());
+							jDescBuilder.setNameSpace(addAnswer);
+							jDescBuilder.setOwnerId(jobOp.getData()
+									.getOwnerId());
+							jDescBuilder.setStatus(JobCode.JOBRECEIVED);
+
+							jDescBuilder.setOptions(questions.build());
+							jb.addData(jDescBuilder.build());
+							pb.setJobStatus(jb.build());
+							rb.setBody(pb.build());
+							reply = rb.build();
+						}
 					}
 
 				}

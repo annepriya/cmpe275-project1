@@ -49,8 +49,10 @@ import eye.Comm.JobBid;
 import eye.Comm.JobDesc;
 import eye.Comm.JobOperation;
 import eye.Comm.JobProposal;
+import eye.Comm.JobStatus;
 import eye.Comm.Management;
 import eye.Comm.Payload;
+import eye.Comm.PokeStatus;
 import eye.Comm.Request;
 import eye.Comm.JobDesc.JobCode;
 import eye.Comm.JobOperation.JobAction;
@@ -73,6 +75,7 @@ public class JobManager {
 	LinkedBlockingDeque<JobBid> bidQueue;
 	private static Map<String, JobBid> bidMap;
 	private static final String getMoreCourses = "getmorecourses";
+
 	private static final String listCourses = "listcourses";
 	private Map<String, Channel> channelMap = new HashMap<String, Channel>();
 
@@ -145,7 +148,6 @@ public class JobManager {
 					+ req.getJobId());
 
 		}
-		// ManagementQueue.enqueueResponse(jobBid, ch);
 
 	}
 
@@ -194,7 +196,6 @@ public class JobManager {
 			if (bidMap.containsKey(req.getJobId())) {
 				return;
 			}
-
 			if (req.getBid() == 1) {
 				bidQueue.add(req);
 				bidMap.put(req.getJobId(), req);
@@ -206,18 +207,7 @@ public class JobManager {
 				String toNodeId = req.getOwnerId() + "";
 
 				if (jobOperation.getBody().getJobOp().getData().getNameSpace()
-						.equals(getMoreCourses)
-						|| jobOperation.getBody().getJobOp().getData()
-								.getNameSpace().equals(competition)) {
-
-					/*
-					 * List<String> leaderList = new ArrayList<String>();
-					 * leaderList.add(new String("192.168.0.235:5573"));
-					 * leaderList.add(new String("192.168.0.236:5573"));
-					 * leaderList.add(new String("192.168.0.241:5573"));
-					 */
-
-					
+						.equals(getMoreCourses)) {
 
 					Request.Builder rb = Request.newBuilder(jobOperation);
 					Header.Builder hbldr = rb.getHeaderBuilder();
@@ -233,11 +223,8 @@ public class JobManager {
 					JobDesc.Builder jDescBuilder = JobDesc.newBuilder();
 					jDescBuilder.setJobId(req.getJobId());
 					jDescBuilder.setOwnerId(req.getOwnerId());
-					if(jobOperation.getBody().getJobOp().getData()
-								.getNameSpace().equals(competition))
-						jDescBuilder.setNameSpace(competition);
-					else
-						jDescBuilder.setNameSpace(listCourses);
+
+					jDescBuilder.setNameSpace(listCourses);
 					jDescBuilder.setStatus(JobCode.JOBQUEUED);
 
 					jobOpBuilder.setData(jDescBuilder.build());
@@ -247,8 +234,6 @@ public class JobManager {
 					Request jobDispatched = rb.build();
 
 					Channel ch = channelMap.get(req.getJobId());
-					
-					
 
 					InetSocketAddress inetSa = (InetSocketAddress) ch
 							.remoteAddress();
@@ -266,25 +251,34 @@ public class JobManager {
 					ChannelQueue queue = QueueFactory.getInstance(out);
 					queue.enqueueResponse(jobDispatched, out);
 
-					/*
-					 * String destHost = null; int destPort = 0; for (String
-					 * destination : leaderList) { String[] dest =
-					 * destination.split(":"); destHost = dest[0]; destPort =
-					 * Integer.parseInt(dest[1]);
-					 * 
-					 * 
-					 * InetSocketAddress sa = new InetSocketAddress(destHost,
-					 * destPort);
-					 * 
-					 * Channel ch = connectToPublic(sa); ChannelQueue queue =
-					 * QueueFactory.getInstance(ch);
-					 * 
-					 * logger.info(
-					 * "****************Job Request being dispatched to leaders********"
-					 * );
-					 * 
-					 * queue.enqueueResponse(jobDispatched, ch); }
-					 */
+				} else if (jobOperation.getBody().getJobOp().getData()
+						.getNameSpace().equals(competition)) {
+
+					// reply success
+					Request.Builder rb = Request.newBuilder();
+					// metadata
+					rb.setHeader(ResourceUtil.buildHeader(jobOperation
+							.getHeader().getRoutingId(), PokeStatus.SUCCESS,
+							"competition request processed", jobOperation
+									.getHeader().getOriginator(), jobOperation
+									.getHeader().getTag(), leaderId));
+
+					// payload
+					Payload.Builder pb = Payload.newBuilder();
+					JobStatus.Builder jb = JobStatus.newBuilder();
+					jb.setStatus(PokeStatus.SUCCESS);
+					jb.setJobId(jobOperation.getBody().getJobOp().getJobId());
+					jb.setJobState(JobDesc.JobCode.JOBRECEIVED);
+					pb.setJobStatus(jb.build());
+
+					rb.setBody(pb.build());
+
+					Request reply = rb.build();
+
+					Channel ch = JobResource.getChMap().get(
+							jobOperation.getBody().getJobOp().getJobId());
+
+					ch.writeAndFlush(reply);
 
 				} else {
 
